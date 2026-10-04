@@ -34,7 +34,7 @@ function HomeView({projects,onOpen,onAdd}:{projects:Project[],onOpen:(id:string)
  <main className="content"><section className="hero"><Building2 size={42}/><div><h2>Всё по объекту — в одном месте</h2><p>Замеры, материалы, смета, закупки и дневник работ.</p></div><button className="primary" onClick={onAdd}>Создать объект</button></section>
  <div className="section-title"><h2>Объекты</h2><span>{projects.length}</span></div>
  {projects.length===0?<div className="empty"><Home size={34}/><b>Пока нет объектов</b><p>Создай первый объект и начни с замеров.</p></div>:<div className="cards">{projects.map(p=><button className="project-card" key={p.id} onClick={()=>onOpen(p.id)}><div className="project-icon"><Building2/></div><div className="card-main"><b>{p.name}</b><span>{p.address||'Адрес не указан'}</span><small>{p.rooms.length} помещений · {p.materials.length} материалов</small></div><ChevronRight/></button>)}</div>}</main>
- <div className="hint">📱 В меню браузера можно добавить «Строитель» на главный экран.</div></div>
+ <div className="hint"><Smartphone size={16}/> <span>В меню браузера можно добавить «Строитель» на главный экран.</span></div></div>
 }
 
 function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:()=>void,onUpdate:(p:Project)=>void,onDelete:()=>void}){
