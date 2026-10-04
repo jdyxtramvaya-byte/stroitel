@@ -184,6 +184,7 @@ function EstimatePreview({project,works,materials,labor,direct,profit,total,pct,
 <div className="estimate-doc-works">{works.length===0?<p>Работы не добавлены.</p>:works.map(w=><div className="estimate-doc-work" key={w.id}><span><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></span><strong>{money(Number(w.laborPrice)||0)}</strong></div>)}</div>
 <footer>Смета сформирована в приложении «Строитель». Стоимость является расчётной и может быть уточнена после согласования работ и материалов.</footer>
 </article></div></div>
+}
 
 function Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
  const bought=project.materials.filter(m=>m.bought).length
