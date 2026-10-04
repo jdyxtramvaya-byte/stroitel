@@ -53,6 +53,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  {active==='Работы'&&<WorkPlanner project={project} onUpdate={patch}/>}
  {active==='Замеры'&&<Measurements project={project} onAdd={()=>{setEditingRoom(null);setRoomModal(true)}} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={()=>{}}/>}
  {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
+ {active==='Цены'&&<PriceFinder materials={project.materials}/>} 
  {active==='Смета'&&<Estimate project={project}/>}
  {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
  {active==='Дневник'&&<Diary project={project} onUpdate={patch}/>}
