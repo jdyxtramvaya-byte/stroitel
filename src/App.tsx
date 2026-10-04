@@ -44,7 +44,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  const [active,setActive]=useState<ModuleName>('Замеры'),[roomModal,setRoomModal]=useState(false),[editingRoom,setEditingRoom]=useState<Room|null>(null)
  const floor=useMemo(()=>project.rooms.reduce((s,r)=>s+area(r),0),[project.rooms])
  const wall=useMemo(()=>project.rooms.reduce((s,r)=>s+walls(r),0),[project.rooms])
- const modules:[ModuleName,typeof Ruler,string][]=[['Работы',Wrench,'#eef4ff'],['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
+ const modules:[ModuleName,typeof Ruler,string][]=[['Работы',Wrench,'#eef4ff'],['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Цены',CircleDollarSign,'#eef8ff'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
  const patch=(x:Partial<Project>)=>onUpdate({...project,...x})
  return <div className="app"><header className="topbar detail"><button className="back" onClick={onBack}><ArrowLeft/></button><div><div className="eyebrow">ОБЪЕКТ</div><h1>{project.name}</h1></div><button className="more" onClick={()=>{if(confirm('Удалить объект?'))onDelete()}}><Trash2/></button></header>
  <main className="content"><div className="project-info">{project.address&&<span><MapPin size={16}/>{project.address}</span>}{project.client&&<span><UserRound size={16}/>{project.client}</span>}</div>
