@@ -5,7 +5,7 @@ import PriceFinder from './PriceFinder'
 import {Building2,Plus,Wrench,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone,PenLine} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
-type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean}
+type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type DiaryEntry={id:string,date:string,text:string}
 type Issue={id:string,title:string,priority:'low'|'medium'|'high',status:'open'|'done'}
 type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],works?:any[],createdAt:string}
@@ -24,7 +24,7 @@ export default function App(){
  useEffect(()=>save(projects),[projects])
  const project=projects.find(p=>p.id===selected)
  const addProject=(x:Omit<Project,'id'|'rooms'|'materials'|'diary'|'issues'|'createdAt'>)=>{
-  const p={...x,id:uid(),rooms:[],materials:[],diary:[],issues:[],createdAt:new Date().toISOString()}
+  const p={...x,id:uid(),rooms:[],materials:[],diary:[],issues:[],works:[],createdAt:new Date().toISOString()}
   setProjects(v=>[p,...v]);setSelected(p.id);setModal(false)
  }
  const updateProject=(next:Project)=>setProjects(v=>v.map(p=>p.id===next.id?next:p))
@@ -51,7 +51,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  <div className="stats"><div><b>{floor.toFixed(1)}</b><span>м² пола</span></div><div><b>{wall.toFixed(1)}</b><span>м² стен</span></div><div><b>{project.rooms.length}</b><span>помещений</span></div></div>
  <div className="section-title"><h2>Разделы</h2></div><div className="modules">{modules.map(([name,Icon,bg])=><button className={`module ${active===name?'active':''}`} key={name} onClick={()=>setActive(name)} style={{'--bg':bg} as CSSProperties}><Icon/><b>{name}</b><ChevronRight/></button>)}</div>
  {active==='Работы'&&<WorkPlanner project={project} onUpdate={patch}/>}
- {active==='Замеры'&&<Measurements project={project} onAdd={()=>{setEditingRoom(null);setRoomModal(true)}} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={()=>{}}/>}
+ {active==='Замеры'&&<Measurements project={project} onAdd={()=>{setEditingRoom(null);setRoomModal(true)}} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={id=>patch({rooms:project.rooms.filter(r=>r.id!==id)})}/>}
  {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
  {active==='Цены'&&<PriceFinder materials={project.materials}/>} 
  {active==='Смета'&&<Estimate project={project}/>}
@@ -77,7 +77,7 @@ function Materials({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Proje
  const total=project.materials.reduce((s,m)=>s+m.qty*m.price,0)
  const add=()=>{if(!name.trim()||+qty<=0)return;onUpdate({materials:[...project.materials,{id:uid(),name:name.trim(),unit,qty:+qty,price:+price||0,bought:false}]});setName('');setQty('');setPrice('')}
  return <><div className="section-title"><h2>Материалы</h2><b>{money(total)}</b></div><div className="form-card"><label>Материал<input value={name} onChange={e=>setName(e.target.value)} placeholder="Цемент М500"/></label><div className="grid3"><label>Ед.<select value={unit} onChange={e=>setUnit(e.target.value)}><option>шт</option><option>кг</option><option>м²</option><option>м³</option><option>м</option><option>л</option></select></label><label>Количество<input inputMode="decimal" value={qty} onChange={e=>setQty(e.target.value)} placeholder="10"/></label><label>Цена<input inputMode="decimal" value={price} onChange={e=>setPrice(e.target.value)} placeholder="500"/></label></div><button className="primary wide" onClick={add} disabled={!name.trim()||+qty<=0}>Добавить материал</button></div>
- <div className="material-list">{project.materials.length===0?<div className="empty compact"><Boxes size={28}/><b>Список пока пуст</b><p>Добавляй материалы — здесь будет стоимость объекта.</p></div>:project.materials.map(m=><div className="material-row" key={m.id}><div><b>{m.name}</b><span>{m.qty} {m.unit} × {money(m.price)}</span></div><strong>{money(m.qty*m.price)}</strong><button className="icon-btn" onClick={()=>onUpdate({materials:project.materials.filter(x=>x.id!==m.id)})}><X size={16}/></button></div>)}</div></>
+ <div className="material-list">{project.materials.length===0?<div className="empty compact"><Boxes size={28}/><b>Список пока пуст</b><p>Добавляй материалы — здесь будет стоимость объекта.</p></div>:project.materials.map(m=><div className="material-row" key={m.id}><div><b>{m.name}</b><span>{m.qty} {m.unit} × {money(m.price)}{m.packages?` · ${m.packages} ${m.packageUnit||'уп.'}`:''}</span></div><strong>{money(m.qty*m.price)}</strong><button className="icon-btn" onClick={()=>onUpdate({materials:project.materials.filter(x=>x.id!==m.id)})}><X size={16}/></button></div>)}</div></>
 }
 
 function Estimate({project}:{project:Project}){
