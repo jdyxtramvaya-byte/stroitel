@@ -3,7 +3,7 @@ import {useMemo,useState} from 'react'
 import {Check,Trash2,Wrench,Package,Plus} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
-type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,productId?:string,product?:Product}
+type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,laborPrice?:number,productId?:string,product?:Product}
 type Product={id:string,name:string,brand:string,unit:string,packSize:number,packUnit:string,consumption:number,consumptionUnit:string}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type Project={rooms:Room[],materials:Material[],works?:Work[]}
@@ -65,6 +65,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const [thickness,setThickness]=useState('50')
  const [coats,setCoats]=useState('2')
  const [reserve,setReserve]=useState('10')
+ const [laborPrice,setLaborPrice]=useState('0')
  const [productId,setProductId]=useState('')
  const productOptions=products[name]??[]
  const product=productOptions.find(x=>x.id===productId)??productOptions[0]
@@ -103,7 +104,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const add=()=>{
   const selected=productOptions.find(x=>x.id===productId)??productOptions[0]
   if(!name||roomIds.length===0||!selected)return
-  const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,productId:selected.id,product:selected}
+  const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected.id,product:selected}
   const nextWorks=[...works,work]
   onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
  }
@@ -120,9 +121,10 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     <label>Помещения</label>
     <div className="room-picker">{project.rooms.map(r=><button type="button" className={roomIds.includes(r.id)?'selected':''} key={r.id} onClick={()=>toggleRoom(r.id)}><span>{roomIds.includes(r.id)&&<Check size={14}/>}</span>{r.name}</button>)}</div>
     <div className="grid3"><label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label><label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label><label>Запас, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label></div>
+    <label>Стоимость работы, ₽<input inputMode="decimal" value={laborPrice} onChange={e=>setLaborPrice(e.target.value)} placeholder="Например, 25000"/></label>
     <button className="primary wide" onClick={add} disabled={!roomIds.length}>Добавить работу</button>
    </div></details>
-   {works.length>0&&<div className="work-list">{works.map(w=><div className="work-card" key={w.id}><div><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds.includes(r.id)).map(r=>r.name).join(', ')}</small>{calc(w,project.rooms).map(m=><span key={m.name}>{m.name}: {m.qty.toFixed(1)} {m.unit}</span>)}</div><div className="work-actions"><button className="icon-btn" onClick={()=>onUpdate({works:works.map(x=>x.id===w.id?{...x,done:!x.done}:x)})}>{w.done?<Check size={17}/>:<span>○</span>}</button><button className="icon-btn danger" onClick={()=>onUpdate({works:works.filter(x=>x.id!==w.id)})}><Trash2 size={16}/></button></div></div>)}</div>}
+   {works.length>0&&<div className="work-list">{works.map(w=><div className="work-card" key={w.id}><div><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds.includes(r.id)).map(r=>r.name).join(', ')} · {Number(w.laborPrice||0).toLocaleString('ru-RU')} ₽</small>{calc(w,project.rooms).map(m=><span key={m.name}>{m.name}: {m.qty.toFixed(1)} {m.unit}</span>)}</div><div className="work-actions"><button className="icon-btn" onClick={()=>onUpdate({works:works.map(x=>x.id===w.id?{...x,done:!x.done}:x)})}>{w.done?<Check size={17}/>:<span>○</span>}</button><button className="icon-btn danger" onClick={()=>onUpdate({works:works.filter(x=>x.id!==w.id)})}><Trash2 size={16}/></button></div></div>)}</div>}
    <div className="section-title"><div><h2>Материалы по работам</h2><span>Количество округляется до целой упаковки.</span></div><button className="link" onClick={syncMaterials}>Добавить в материалы</button></div>
    <div className="material-list">{totals.length===0?<div className="empty compact"><b>Добавь первую работу</b></div>:totals.map(m=>{const p=pack(m.name,m.unit,m.qty);return <div className="material-row" key={m.name}><div><b>{m.name}</b><span>Нужно {m.qty.toFixed(1)} {m.unit} · купить {p.packages||'—'} {p.packageUnit||m.unit}</span></div><strong>{p.purchaseQty.toFixed(1)} {m.unit}</strong><Package size={17}/></div>})}</div>
   </>}
