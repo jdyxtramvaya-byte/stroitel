@@ -3,7 +3,7 @@ import {useEffect,useMemo,useState} from 'react'
 import type {CSSProperties} from 'react'
 import WorkPlanner from './WorkPlanner'
 import PriceFinder from './PriceFinder'
-import {Building2,Plus,Wrench,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone,PenLine,Grid2X2} from 'lucide-react'
+import {Building2,Plus,Wrench,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone,PenLine,Grid2X2,Eye,Printer,Share2} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
@@ -153,22 +153,37 @@ function Estimate({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Projec
  const labor=works.reduce((s,w)=>s+(Number(w.laborPrice)||0),0)
  const direct=materials+labor
  const [margin,setMargin]=useState(String(project.profitPercent??20))
+ const [preview,setPreview]=useState(false)
  const pct=Math.max(0,Number(margin.replace(',','.'))||0)
  const profit=direct*pct/100
  const total=direct+profit
  const areaTotal=project.rooms.reduce((s,r)=>s+area(r),0)
  const open=works.filter(w=>!w.done).length
  const saveMargin=()=>onUpdate({profitPercent:pct})
+ const estimateText=()=>{const lines=works.map(w=>'• '+w.name+' — '+money(Number(w.laborPrice)||0)).join('\\n');return 'Смета: '+project.name+'\\nЗаказчик: '+(project.client||'—')+'\\n\\nМатериалы: '+money(materials)+'\\nРаботы: '+money(labor)+'\\nСебестоимость: '+money(direct)+'\\nПрибыль ('+pct+'%): '+money(profit)+'\\nИТОГО: '+money(total)+(lines?'\\n\\nРаботы:\\n'+lines:'')}
+ const shareEstimate=async()=>{const text=estimateText();if(navigator.share){try{await navigator.share({title:'Смета — '+project.name,text})}catch{}}else{await navigator.clipboard?.writeText(text);alert('Смета скопирована в буфер обмена.')}}
+ const printEstimate=()=>window.print()
  return <section className="compact-module"><div className="module-hero"><div><span className="section-kicker">ФИНАНСЫ</span><h2>Смета</h2><p>{works.length} работ · {project.materials.length} материалов · расчёт цены объекта.</p></div><CircleDollarSign size={22}/></div>
  <div className="estimate-main"><div className="estimate-lead"><span>ИТОГО ДЛЯ ЗАКАЗЧИКА</span><b>{money(total)}</b><small>С учётом {pct}% прибыли</small></div>
  <div className="estimate-breakdown"><div><span>Материалы</span><b>{money(materials)}</b></div><div><span>Работа</span><b>{money(labor)}</b></div><div><span>Себестоимость</span><b>{money(direct)}</b></div><div><span>Прибыль</span><b>{money(profit)}</b></div></div></div>
  <div className="estimate-settings"><div><div><b>Наценка / прибыль</b><span>Процент добавляется к себестоимости материалов и работ.</span></div><label><input inputMode="decimal" value={margin} onChange={e=>setMargin(e.target.value)} onBlur={saveMargin}/> %</label></div></div>
+ <div className="estimate-actions no-print"><button className="secondary" onClick={()=>setPreview(true)}><Eye size={16}/> Показать заказчику</button><button className="primary" onClick={printEstimate}><Printer size={16}/> Печать / PDF</button><button className="secondary" onClick={shareEstimate}><Share2 size={16}/> Отправить</button></div>
  <div className="estimate-status"><span>{open===0&&works.length>0?'Все работы выполнены':('Осталось работ: '+open)}</span><span>{areaTotal.toFixed(1)} м² объекта</span></div>
  <div className="estimate-list"><div className="section-title"><div><h2>Работы</h2><span>Цена работы задаётся при добавлении.</span></div></div>{works.length===0?<div className="empty compact"><Wrench size={26}/><b>Работ пока нет</b><p>Добавь работы — они появятся в смете автоматически.</p></div>:works.map(w=><div className="estimate-line" key={w.id}><div><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></div><strong>{money(Number(w.laborPrice)||0)}</strong></div>)}</div>
+ {preview&&<EstimatePreview project={project} works={works} materials={materials} labor={labor} direct={direct} profit={profit} total={total} pct={pct} onClose={()=>setPreview(false)} onPrint={printEstimate}/>}
  </section>
 }
 
-function Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
+function EstimatePreview({project,works,materials,labor,direct,profit,total,pct,onClose,onPrint}:{project:Project,works:any[],materials:number,labor:number,direct:number,profit:number,total:number,pct:number,onClose:()=>void,onPrint:()=>void}){
+ return <div className="estimate-preview-overlay"><div className="estimate-preview-shell"><div className="estimate-preview-toolbar no-print"><b>Предпросмотр сметы</b><div><button className="secondary" onClick={onClose}>Закрыть</button><button className="primary" onClick={onPrint}><Printer size={16}/> Печать / PDF</button></div></div><article className="estimate-document" id="customer-estimate">
+<header><div><span>СМЕТА</span><h1>{project.name}</h1><p>{project.address||'Адрес не указан'}</p></div><div className="estimate-doc-total"><small>ИТОГО</small><strong>{money(total)}</strong></div></header>
+<div className="estimate-doc-meta"><span>Заказчик <b>{project.client||'Не указан'}</b></span><span>Площадь <b>{project.rooms.reduce((s,r)=>s+area(r),0).toFixed(1)} м²</b></span><span>Наценка <b>{pct}%</b></span></div>
+<h2>Расчёт стоимости</h2>
+<div className="estimate-doc-table"><div className="estimate-doc-row head"><span>Позиция</span><span>Стоимость</span></div><div className="estimate-doc-row"><span>Материалы</span><b>{money(materials)}</b></div><div className="estimate-doc-row"><span>Работы</span><b>{money(labor)}</b></div><div className="estimate-doc-row"><span>Себестоимость</span><b>{money(direct)}</b></div><div className="estimate-doc-row profit"><span>Прибыль / наценка</span><b>{money(profit)}</b></div><div className="estimate-doc-row total"><span>ИТОГО К ОПЛАТЕ</span><b>{money(total)}</b></div></div>
+<h2>Работы</h2>
+<div className="estimate-doc-works">{works.length===0?<p>Работы не добавлены.</p>:works.map(w=><div className="estimate-doc-work" key={w.id}><span><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></span><strong>{money(Number(w.laborPrice)||0)}</strong></div>)}</div>
+<footer>Смета сформирована в приложении «Строитель». Стоимость является расчётной и может быть уточнена после согласования работ и материалов.</footer>
+</article></div></div>\n\nfunction Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
  const bought=project.materials.filter(m=>m.bought).length
  const toggle=(id:string)=>onUpdate({materials:project.materials.map(m=>m.id===id?{...m,bought:!m.bought}:m)})
  return <section className="compact-module"><div className="module-hero"><div><span className="section-kicker">СНАБЖЕНИЕ</span><h2>Закупки</h2><p>{bought} из {project.materials.length} позиций куплено.</p></div><ShoppingCart size={22}/></div>{project.materials.length===0?<div className="empty compact"><ShoppingCart size={28}/><b>Покупать пока нечего</b><p>Сначала добавь материалы.</p></div>:<div className="purchase-list">{project.materials.map(m=><button className={`purchase ${m.bought?'done':''}`} key={m.id} onClick={()=>toggle(m.id)}><span className="check">{m.bought&&<Check size={15}/>}</span><div><b>{m.name}</b><small>{m.qty} {m.unit} · {money(m.qty*m.price)}</small></div></button>)}</div>}</section>
