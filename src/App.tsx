@@ -54,7 +54,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
  {active==='Дневник'&&<Diary project={project} onUpdate={patch}/>}
  {active==='Проблемы'&&<Problems project={project} onUpdate={patch}/>}
- </main>{roomModal&&<RoomModal onClose={()=>setRoomModal(false)} onSave={r=>{patch({rooms:[...project.rooms,{...r,id:uid()}]});setRoomModal(false)}}/></div>
+  </main>{roomModal&&<RoomModal onClose={()=>setRoomModal(false)} onSave={r=>{patch({rooms:[...project.rooms,{...r,id:uid()}]});setRoomModal(false)}}/>}</div>
 }
 
 function Measurements({project,onAdd}:{project:Project,onAdd:()=>void}){
