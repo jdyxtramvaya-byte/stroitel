@@ -48,7 +48,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  <main className="content"><div className="project-info">{project.address&&<span><MapPin size={16}/>{project.address}</span>}{project.client&&<span><UserRound size={16}/>{project.client}</span>}</div>
  <div className="stats"><div><b>{floor.toFixed(1)}</b><span>м² пола</span></div><div><b>{wall.toFixed(1)}</b><span>м² стен</span></div><div><b>{project.rooms.length}</b><span>помещений</span></div></div>
  <div className="section-title"><h2>Разделы</h2></div><div className="modules">{modules.map(([name,Icon,bg])=><button className={`module ${active===name?'active':''}`} key={name} onClick={()=>setActive(name)} style={{'--bg':bg} as CSSProperties}><Icon/><b>{name}</b><ChevronRight/></button>)}</div>
- {active==='Замеры'&&<Measurements project={project} onAdd={()=>setRoomModal(true)}/>}
+ {active==='Замеры'&&<Measurements project={project} onAdd={()=>{setEditingRoom(null);setRoomModal(true)}} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={()=>{}}/>}
  {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
  {active==='Смета'&&<Estimate project={project}/>}
  {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
