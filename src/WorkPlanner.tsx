@@ -79,23 +79,32 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   return [...map.entries()].map(([key,v])=>({name:key.split('|')[0],...v}))
  },[works,project.rooms])
 
- const syncMaterials=()=>{
-  const calculated=totals.map(m=>({...m,...pack(m.name,m.unit,m.qty)}))
+ const materialsFor=(workList:Work[])=>{
+  const map=new Map<string,{unit:string,qty:number}>()
+  workList.forEach(w=>calc(w,project.rooms).forEach(m=>{
+   const key=m.name+'|'+m.unit,old=map.get(key)
+   map.set(key,{unit:m.unit,qty:(old?.qty??0)+m.qty})
+  }))
+  const calculated=[...map.entries()].map(([key,v])=>({name:key.split('|')[0],...v,...pack(key.split('|')[0],v.unit,v.qty)}))
   const next=project.materials.map(m=>{
    const found=calculated.find(x=>x.name===m.name&&x.unit===m.unit)
    if(!found)return m
    const spec=getSpec(m.name,m.unit)
-   return {...m,qty:found.purchaseQty,price:m.price>0?m.price:(spec?.price??0),packageSize:found.packageSize??spec?.packageSize,packageUnit:found.packageUnit??spec?.packageUnit,packages:found.packages|| (spec?Math.ceil(found.purchaseQty/spec.packageSize):m.packages)}
+   return {...m,qty:found.purchaseQty,price:m.price>0?m.price:(spec?.price??0),packageSize:found.packageSize??spec?.packageSize,packageUnit:found.packageUnit??spec?.packageUnit,packages:found.packages||(spec?Math.ceil(found.purchaseQty/spec.packageSize):m.packages)}
   })
-  calculated.filter(x=>!project.materials.some(m=>m.name===x.name&&m.unit===x.unit)).forEach(x=>{const spec=getSpec(x.name,x.unit);next.push({id:crypto.randomUUID(),name:x.name,unit:x.unit,qty:x.purchaseQty,price:spec?.price??0,bought:false,packageSize:x.packageSize??spec?.packageSize,packageUnit:x.packageUnit??spec?.packageUnit,packages:x.packages||(spec?Math.ceil(x.purchaseQty/spec.packageSize):undefined)})})
-  onUpdate({materials:next})
+  calculated.filter(x=>!project.materials.some(m=>m.name===x.name&&m.unit===x.unit)).forEach(x=>{
+   const spec=getSpec(x.name,x.unit)
+   next.push({id:crypto.randomUUID(),name:x.name,unit:x.unit,qty:x.purchaseQty,price:spec?.price??0,bought:false,packageSize:x.packageSize??spec?.packageSize,packageUnit:x.packageUnit??spec?.packageUnit,packages:x.packages||(spec?Math.ceil(x.purchaseQty/spec.packageSize):undefined)})
+  })
+  return next
  }
+ const syncMaterials=()=>onUpdate({materials:materialsFor(works)})
 
  const add=()=>{
   const selected=productOptions.find(x=>x.id===productId)??productOptions[0]
   if(!name||roomIds.length===0||!selected)return
   const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,productId:selected.id,product:selected}
-  onUpdate({works:[...works,work]})
+  const nextWorks=[...works,work]\n  onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
  }
 
  const toggleRoom=(id:string)=>setRoomIds(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
