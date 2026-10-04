@@ -9,7 +9,7 @@ type Room={id:string,name:string,length:number,width:number,height:number}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type DiaryEntry={id:string,date:string,text:string}
 type Issue={id:string,title:string,priority:'low'|'medium'|'high',status:'open'|'done'}
-type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],works?:any[],createdAt:string}
+type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],works?:any[],profitPercent?:number,createdAt:string}
 type ModuleName='Работы'|'Замеры'|'Материалы'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
 type ProjectTab='Обзор'|ModuleName
 const KEY='stroitel-projects-v1'
@@ -69,7 +69,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
     {active==='Работы'&&<WorkPlanner project={project} onUpdate={patch}/>}
     {active==='Замеры'&&<Measurements project={project} onAdd={showRoomModal} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={id=>patch({rooms:project.rooms.filter(r=>r.id!==id)})}/>}
     {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
-    {active==='Смета'&&<Estimate project={project}/>}
+    {active==='Смета'&&<Estimate project={project} onUpdate={patch}/>}
     {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
     {active==='Дневник'&&<Diary project={project} onUpdate={patch}/>}
     {active==='Проблемы'&&<Problems project={project} onUpdate={patch}/>}
@@ -147,9 +147,25 @@ function Materials({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Proje
  <div className="material-list">{project.materials.length===0?<div className="empty compact"><Boxes size={28}/><b>Список пока пуст</b><p>Добавляй материалы — здесь будет стоимость объекта.</p></div>:project.materials.map(m=><div className="material-row" key={m.id}><div><b>{m.name}</b><span>{m.qty} {m.unit} × {money(m.price)}{m.packages? ` · ${m.packages} ${m.packageUnit||'уп.'}`:''}</span></div><strong>{money(m.qty*m.price)}</strong><button className="icon-btn" onClick={()=>onUpdate({materials:project.materials.filter(x=>x.id!==m.id)})}><X size={16}/></button></div>)}</div></section>
 }
 
-function Estimate({project}:{project:Project}){
- const materials=project.materials.reduce((s,m)=>s+m.qty*m.price,0), rooms=project.rooms.length, areaTotal=project.rooms.reduce((s,r)=>s+area(r),0)
- return <section className="compact-module"><div className="module-hero"><div><span className="section-kicker">ФИНАНСЫ</span><h2>Смета</h2><p>Текущая стоимость материалов.</p></div><CircleDollarSign size={22}/></div><div className="estimate-card"><div><span>Материалы</span><b>{money(materials)}</b></div><div><span>Площадь пола</span><b>{areaTotal.toFixed(1)} м²</b></div><div><span>Помещения</span><b>{rooms}</b></div><div className="estimate-total"><span>Итого по материалам</span><b>{money(materials)}</b></div></div><div className="info-box">Сейчас смета считает стоимость материалов. Следующим этапом добавим работы, нормы расхода и прибыль.</div></section>
+function Estimate({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
+ const materials=project.materials.reduce((s,m)=>s+m.qty*m.price,0)
+ const works=project.works??[]
+ const labor=works.reduce((s,w)=>s+(Number(w.laborPrice)||0),0)
+ const direct=materials+labor
+ const [margin,setMargin]=useState(String(project.profitPercent??20))
+ const pct=Math.max(0,Number(margin.replace(',','.'))||0)
+ const profit=direct*pct/100
+ const total=direct+profit
+ const areaTotal=project.rooms.reduce((s,r)=>s+area(r),0)
+ const open=works.filter(w=>!w.done).length
+ const saveMargin=()=>onUpdate({profitPercent:pct})
+ return <section className="compact-module"><div className="module-hero"><div><span className="section-kicker">ФИНАНСЫ</span><h2>Смета</h2><p>{works.length} работ · {project.materials.length} материалов · расчёт цены объекта.</p></div><CircleDollarSign size={22}/></div>
+ <div className="estimate-main"><div className="estimate-lead"><span>ИТОГО ДЛЯ ЗАКАЗЧИКА</span><b>{money(total)}</b><small>С учётом {pct}% прибыли</small></div>
+ <div className="estimate-breakdown"><div><span>Материалы</span><b>{money(materials)}</b></div><div><span>Работа</span><b>{money(labor)}</b></div><div><span>Себестоимость</span><b>{money(direct)}</b></div><div><span>Прибыль</span><b>{money(profit)}</b></div></div></div>
+ <div className="estimate-settings"><div><div><b>Наценка / прибыль</b><span>Процент добавляется к себестоимости материалов и работ.</span></div><label><input inputMode="decimal" value={margin} onChange={e=>setMargin(e.target.value)} onBlur={saveMargin}/> %</label></div></div>
+ <div className="estimate-status"><span>{open===0&&works.length>0?'Все работы выполнены':('Осталось работ: '+open)}</span><span>{areaTotal.toFixed(1)} м² объекта</span></div>
+ <div className="estimate-list"><div className="section-title"><div><h2>Работы</h2><span>Цена работы задаётся при добавлении.</span></div></div>{works.length===0?<div className="empty compact"><Wrench size={26}/><b>Работ пока нет</b><p>Добавь работы — они появятся в смете автоматически.</p></div>:works.map(w=><div className="estimate-line" key={w.id}><div><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></div><strong>{money(Number(w.laborPrice)||0)}</strong></div>)}</div>
+ </section>
 }
 
 function Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
