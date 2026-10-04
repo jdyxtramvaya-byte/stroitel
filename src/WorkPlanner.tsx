@@ -3,7 +3,7 @@ import {useMemo,useState} from 'react'
 import {Check,Trash2,Wrench,Package,Plus} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
-type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,laborPrice?:number,productId?:string,product?:Product}
+type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,laborPrice?:number,productId?:string,product?:Product,quantity?:number,unit?:string}
 type Product={id:string,name:string,brand:string,unit:string,packSize:number,packUnit:string,consumption:number,consumptionUnit:string}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type Project={rooms:Room[],materials:Material[],works?:Work[]}
@@ -221,9 +221,23 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const [coats,setCoats]=useState('2')
  const [reserve,setReserve]=useState('10')
  const [laborPrice,setLaborPrice]=useState('0')
+ const [quantity,setQuantity]=useState('')
+ const [unit,setUnit]=useState('м²')
  const [productId,setProductId]=useState('')
  const productOptions=products[name]??[]
  const product=productOptions.find(x=>x.id===productId)??productOptions[0]
+ const fieldMode=useMemo(()=>{
+  const n=name.toLowerCase()
+  if(/покраск|оклейк|шпакл|штукатур|облицовк.*стен|фасад|гипсокартон|перегород|кладк/.test(n))return 'wall'
+  if(/плитк|керамогранит|ламинат|линолеум|кварцвинил|паркет|пола|стяжк|площадк|отмостк|дорожк/.test(n))return 'area'
+  if(/кабел|труб|водопровод|канализац|дренаж|ливнев|забор|огражден|водосточ|слаботоч/.test(n))return 'length'
+  if(/розет|выключател|светильник|двер|окн|подокон|радиатор|смесител|унитаз|ванн|кот[её]л|кондиционер|домофон|свай|ворот|септик|коллектор|инсталляц/.test(n))return 'count'
+  if(/бетон|фундамент|котлован|транше|грунт|засыпк|опалуб|арматур|монолит|сборн.*плит/.test(n))return 'volume'
+  return 'generic'
+ },[name])
+ const needsThickness=['Стяжка пола','Штукатурка стен','Шпаклёвка стен','Кладка газоблока','Кладка пеноблока','Кладка кирпича','Кладка камня','Утепление фасада','Теплоизоляция стен','Утепление кровли','Устройство ленточного фундамента','Устройство плитного фундамента'].includes(name)
+ const needsCoats=/покраск|грунтовк|оклейк/.test(name.toLowerCase())
+ const needsReserve=!['count','length'].includes(fieldMode)
 
  const totals=useMemo(()=>{
   const map=new Map<string,{unit:string,qty:number}>()
@@ -259,7 +273,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const add=()=>{
   const selected=productOptions.find(x=>x.id===productId)??productOptions[0]
   if(!name.trim()||roomIds.length===0)return
-  const work={id:crypto.randomUUID(),name:name.trim(),roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected?.id,product:selected}
+  const work={id:crypto.randomUUID(),name:name.trim(),roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected?.id,product:selected,quantity:quantity?+quantity:undefined,unit:unit||undefined}
   const nextWorks=[...works,work]
   onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
  }
@@ -274,7 +288,16 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     {productOptions.length>0&&<><label>Конкретный материал<select value={productId||product?.id||''} onChange={e=>setProductId(e.target.value)}>{productOptions.map(p=><option key={p.id} value={p.id}>{p.brand} · {p.name} · {p.packSize} {p.unit}/{p.packUnit}</option>)}</select></label>{product&&<div className="info-box">Норма расхода: {product.consumption} {product.consumptionUnit}</div>}</>}
     <label>Помещения</label>
     <div className="room-picker">{project.rooms.map(r=><button type="button" className={roomIds.includes(r.id)?'selected':''} key={r.id} onClick={()=>toggleRoom(r.id)}><span>{roomIds.includes(r.id)&&<Check size={14}/>}</span>{r.name}</button>)}</div>
-    <div className="grid3"><label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label><label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label><label>Запас, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label></div>
+    <div className="grid3">
+    {fieldMode==='area'&&<label>Площадь работ, м²<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Авто по помещениям"/></label>}
+    {fieldMode==='length'&&<label>Длина, м<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 35"/></label>}
+    {fieldMode==='count'&&<label>Количество, шт.<input inputMode="numeric" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 8"/></label>}
+    {fieldMode==='volume'&&<label>Объём, м³<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 12.5"/></label>}
+    {fieldMode==='generic'&&<><label>Количество<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Введите объём"/></label><label>Ед. изм.<select value={unit} onChange={e=>setUnit(e.target.value)}><option>м²</option><option>м.п.</option><option>м³</option><option>шт.</option><option>компл.</option></select></label></>}
+    {needsThickness&&<label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label>}
+    {needsCoats&&<label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label>}
+    {needsReserve&&<label>Запас материалов, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label>}
+   </div>
     <label>Стоимость работы, ₽<input inputMode="decimal" value={laborPrice} onChange={e=>setLaborPrice(e.target.value)} placeholder="Например, 25000"/></label>
     <label>Своя работа<input value={!presets.some(p=>p.name===name)?name:''} onChange={e=>{setName(e.target.value);setProductId('')}} placeholder="Например: монтаж перегородки"/></label><button className="primary wide" onClick={add} disabled={!roomIds.length||!name.trim()}>Добавить работу</button>
    </div></details>
