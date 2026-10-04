@@ -391,3 +391,52 @@ body{background:#f5f3ee}
  .sheet-modal{width:100%;border-radius:24px 24px 0 0;margin-top:auto}
 }
 @media(min-width:701px){.module-content{max-width:760px;margin-left:auto;margin-right:auto}}
+
+
+/* ── FINAL FIELD-APP POLISH ── */
+html{scroll-behavior:smooth}
+button,input,select,textarea{touch-action:manipulation}
+button{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease,background-color .16s ease,color .16s ease}
+.project-card,.overview-kpis button,.quick-grid button,.overview-panel,.room,.material-row,.purchase,.diary,.issue,.work-card,.estimate-card,.form-card{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.project-card:active,.overview-kpis button:active,.quick-grid button:active,.room:active,.material-row:active,.purchase:active,.diary:active,.issue:active{transform:scale(.992)}
+.bottom-nav{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));}
+.bottom-nav button{position:relative}
+.bottom-nav button.active:after{content:"";position:absolute;left:50%;bottom:3px;width:4px;height:4px;border-radius:50%;background:currentColor;transform:translateX(-50%)}
+.module-content>.compact-module,.module-content>.work-planner{animation:moduleEnter .22s ease-out both}
+@keyframes moduleEnter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.empty.compact{min-height:190px;display:grid;place-items:center;text-align:center;align-content:center;gap:7px;padding:24px}
+.empty.compact svg{color:var(--accent-2)}
+.empty.compact p{max-width:340px}
+.empty.compact .primary{display:flex;align-items:center;gap:7px;margin-top:5px}
+.measurement-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.measurement-summary div{padding:13px 10px}
+.room-main small{display:block;line-height:1.45}
+.material-list,.purchase-list,.diary-list,.issue-list,.work-list{display:grid;gap:8px}
+.material-row>div{min-width:0}
+.material-row>div span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.material-row .icon-btn{margin-left:auto}
+.estimate-card{display:grid;grid-template-columns:1fr 1fr;gap:1px;overflow:hidden;padding:1px}
+.estimate-card>div{background:#fffdfa;padding:14px}
+.estimate-card .estimate-total{grid-column:1/-1;background:#20262b;color:#fff;border-radius:0 0 15px 15px}
+.estimate-card .estimate-total span{color:#bfc4c8}
+.estimate-card .estimate-total b{font-size:21px}
+.purchase-list .purchase{width:100%;text-align:left;display:flex;align-items:center;gap:11px;padding:13px}
+.purchase .check{flex:0 0 auto}
+.purchase>div{min-width:0;flex:1}
+.purchase small{display:block;color:var(--muted);margin-top:3px}
+.diary-list:empty:after,.issue-list:empty:after{content:"Пока здесь ничего нет";display:block;padding:25px;text-align:center;color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:15px}
+@media(max-width:600px){
+  .module-content{margin-top:0}
+  .module-breadcrumb{display:none}
+  .module-hero{margin-bottom:12px}
+  .measurement-summary div{padding:11px 7px}
+  .measurement-summary span{font-size:9px}
+  .measurement-summary b{font-size:14px}
+  .estimate-card>div{padding:12px}
+  .more-sheet-card{padding-left:14px;padding-right:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  button,.project-card,.overview-kpis button,.quick-grid button,.overview-panel,.room,.material-row,.purchase,.diary,.issue,.work-card{transition:none}
+  .module-content>.compact-module,.module-content>.work-planner{animation:none}
+}
