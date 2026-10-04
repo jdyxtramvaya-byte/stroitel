@@ -1,9 +1,9 @@
 import {MATERIAL_CATALOG,getMaterialSpec} from './materialCatalog'
 import {useMemo,useState} from 'react'
-import {Check,Trash2,Wrench,Package} from 'lucide-react'
+import {Check,Trash2,Wrench,Package,Plus} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
-type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean}
+type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,productId?:string,product?:Product}
 type Product={id:string,name:string,brand:string,unit:string,packSize:number,packUnit:string,consumption:number,consumptionUnit:string}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type Project={rooms:Room[],materials:Material[],works?:Work[]}
