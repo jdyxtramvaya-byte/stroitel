@@ -4,7 +4,7 @@ import {Check,Trash2,Wrench} from 'lucide-react'
 type Room={id:string,name:string,length:number,width:number,height:number}
 type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean}
-type Project={rooms:Room[],materials:Material,works?:Work[]}
+type Project={rooms:Room[],materials:Material[],works?:Work[]}
 
 const presets=[
  {name:'Стяжка пола',kind:'floor'},
