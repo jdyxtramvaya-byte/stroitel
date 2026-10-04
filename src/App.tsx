@@ -67,6 +67,7 @@ function Measurements({project,onAdd,onEdit,onDelete}:{project:Project,onAdd:()=
  <div className="rooms">{project.rooms.map(r=><div className="room" key={r.id}><div className="room-main"><b>{r.name}</b><span>{r.length} × {r.width} × {r.height} м</span><small>Пол {area(r).toFixed(1)} м² · стены {walls(r).toFixed(1)} м² · объём {(r.length*r.width*r.height).toFixed(1)} м³</small></div><div className="room-side"><strong>{area(r).toFixed(1)} м²</strong><div className="room-actions"><button className="icon-btn" aria-label="Изменить помещение" onClick={()=>onEdit(r)}><PenLine size={15}/></button><button className="icon-btn danger" aria-label="Удалить помещение" onClick={()=>onDelete(r.id)}><Trash2 size={15}/></button></div></div></div>)}</div></>}</>
 }
 
+// materials module
 function Materials({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
  const [name,setName]=useState(''),[unit,setUnit]=useState('шт'),[qty,setQty]=useState(''),[price,setPrice]=useState('')
  const total=project.materials.reduce((s,m)=>s+m.qty*m.price,0)
