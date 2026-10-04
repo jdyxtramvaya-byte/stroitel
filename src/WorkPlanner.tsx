@@ -110,10 +110,10 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
 
  const toggleRoom=(id:string)=>setRoomIds(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
 
- return <section className="work-planner">
+ return <section className="work-planner compact-module"><div className="module-hero"><div><span className="section-kicker">РАБОТЫ</span><h2>Работы</h2><p>{works.length} операций · расчёт материалов автоматически.</p></div><Wrench size={22}/></div>
   <div className="section-title"><div><h2>Что сделать</h2><span>Работы автоматически превращаются в расчёт материалов.</span></div><Wrench size={22}/></div>
   {project.rooms.length===0?<div className="empty compact"><b>Сначала добавь помещение</b><p>После замеров здесь можно назначать работы.</p></div>:<>
-   <div className="form-card">
+   <details className="work-add-details"><summary><Plus size={16}/> Добавить работу</summary><div className="form-card">
     <label>Работа<select value={name} onChange={e=>setName(e.target.value)}>{presets.map(p=><option key={p.name}>{p.name}</option>)}</select></label>
     <label>Конкретный материал<select value={productId||product?.id||''} onChange={e=>setProductId(e.target.value)}>{productOptions.map(p=><option key={p.id} value={p.id}>{p.brand} · {p.name} · {p.packSize} {p.unit}/{p.packUnit}</option>)}</select></label>
     {product&&<div className="info-box">Норма расхода: {product.consumption} {product.consumptionUnit}</div>}
@@ -121,7 +121,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     <div className="room-picker">{project.rooms.map(r=><button type="button" className={roomIds.includes(r.id)?'selected':''} key={r.id} onClick={()=>toggleRoom(r.id)}><span>{roomIds.includes(r.id)&&<Check size={14}/>}</span>{r.name}</button>)}</div>
     <div className="grid3"><label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label><label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label><label>Запас, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label></div>
     <button className="primary wide" onClick={add} disabled={!roomIds.length}>Добавить работу</button>
-   </div>
+   </div></details>
    {works.length>0&&<div className="work-list">{works.map(w=><div className="work-card" key={w.id}><div><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds.includes(r.id)).map(r=>r.name).join(', ')}</small>{calc(w,project.rooms).map(m=><span key={m.name}>{m.name}: {m.qty.toFixed(1)} {m.unit}</span>)}</div><div className="work-actions"><button className="icon-btn" onClick={()=>onUpdate({works:works.map(x=>x.id===w.id?{...x,done:!x.done}:x)})}>{w.done?<Check size={17}/>:<span>○</span>}</button><button className="icon-btn danger" onClick={()=>onUpdate({works:works.filter(x=>x.id!==w.id)})}><Trash2 size={16}/></button></div></div>)}</div>}
    <div className="section-title"><div><h2>Материалы по работам</h2><span>Количество округляется до целой упаковки.</span></div><button className="link" onClick={syncMaterials}>Добавить в материалы</button></div>
    <div className="material-list">{totals.length===0?<div className="empty compact"><b>Добавь первую работу</b></div>:totals.map(m=>{const p=pack(m.name,m.unit,m.qty);return <div className="material-row" key={m.name}><div><b>{m.name}</b><span>Нужно {m.qty.toFixed(1)} {m.unit} · купить {p.packages||'—'} {p.packageUnit||m.unit}</span></div><strong>{p.purchaseQty.toFixed(1)} {m.unit}</strong><Package size={17}/></div>})}</div>
