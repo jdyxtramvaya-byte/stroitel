@@ -1,43 +1,5 @@
 <!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111827">
-  <meta name="description" content="Мобильное приложение для ведения строительных объектов">
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="css/app.css">
-  <title>Строитель — Объекты</title>
-</head>
-<body>
-  <header class="topbar">
-    <div><div class="eyebrow">СТРОИТЕЛЬ</div><h1>Мои объекты</h1></div>
-    <button id="addProjectBtn" class="icon-button" aria-label="Добавить объект">＋</button>
-  </header>
-  <main class="container">
-    <section class="hero-card">
-      <span class="hero-icon">🏗️</span>
-      <h2>Всё по объекту — в одном месте</h2>
-      <p>Замеры, материалы, смета и дневник. Начнём с первого объекта.</p>
-      <button id="heroAddBtn" class="primary-button">Создать объект</button>
-    </section>
-    <section>
-      <div class="section-heading"><h2>Объекты</h2><span id="projectCount" class="muted">0</span></div>
-      <div id="projects" class="project-list"></div>
-    </section>
-  </main>
-  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-head"><h2>Новый объект</h2><button id="closeModalBtn" class="icon-button small">×</button></div>
-      <form id="projectForm">
-        <label>Название объекта<input id="projectName" required maxlength="80" placeholder="Например, Дом Иванова"></label>
-        <label>Адрес<input id="projectAddress" maxlength="120" placeholder="Город, улица"></label>
-        <label>Заказчик<input id="projectClient" maxlength="80" placeholder="Имя заказчика"></label>
-        <div class="form-actions"><button type="button" id="cancelBtn" class="secondary-button">Отмена</button><button type="submit" class="primary-button">Создать</button></div>
-      </form>
-    </div>
-  </div>
-  <script src="js/app.js"></script>
-  <script>if ("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));</script>
-</body>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><meta name="theme-color" content="#111827"/><meta name="description" content="Строитель — управление строительными объектами"/><link rel="manifest" href="/stroitel/manifest.webmanifest"/><title>Строитель</title></head>
+<body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
 </html>
