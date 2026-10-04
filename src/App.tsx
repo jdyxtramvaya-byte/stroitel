@@ -12,7 +12,7 @@ type Project={id:string,name:string,address:string,client:string,rooms:Room[],ma
 type ModuleName='Работы'|'Замеры'|'Материалы'|'Цены'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
 const KEY='stroitel-projects-v1'
 const uid=()=>crypto.randomUUID?.()??Date.now().toString(36)+Math.random().toString(36).slice(2)
-const normalize=(p:any):Project=>({...p,materials:p.materials??[],diary:p.diary??[],issues:p.issues??[]})
+const normalize=(p:any):Project=>({...p,materials:p.materials??[],diary:p.diary??[],issues:p.issues??[],works:p.works??[]})
 const load=():Project[]=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]').map(normalize)}catch{return[]}}
 const save=(p:Project[])=>localStorage.setItem(KEY,JSON.stringify(p))
 const area=(r:Room)=>r.length*r.width
