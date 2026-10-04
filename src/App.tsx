@@ -1,13 +1,14 @@
 import {useEffect,useMemo,useState} from 'react'
 import type {CSSProperties} from 'react'
-import {Building2,Plus,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone,PenLine} from 'lucide-react'
+import WorkPlanner from './WorkPlanner'
+import {Building2,Plus,Wrench,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone,PenLine} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean}
 type DiaryEntry={id:string,date:string,text:string}
 type Issue={id:string,title:string,priority:'low'|'medium'|'high',status:'open'|'done'}
 type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],createdAt:string}
-type ModuleName='Замеры'|'Материалы'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
+type ModuleName='Работы'|'Замеры'|'Материалы'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
 const KEY='stroitel-projects-v1'
 const uid=()=>crypto.randomUUID?.()??Date.now().toString(36)+Math.random().toString(36).slice(2)
 const normalize=(p:any):Project=>({...p,materials:p.materials??[],diary:p.diary??[],issues:p.issues??[]})
@@ -42,12 +43,13 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  const [active,setActive]=useState<ModuleName>('Замеры'),[roomModal,setRoomModal]=useState(false),[editingRoom,setEditingRoom]=useState<Room|null>(null)
  const floor=useMemo(()=>project.rooms.reduce((s,r)=>s+area(r),0),[project.rooms])
  const wall=useMemo(()=>project.rooms.reduce((s,r)=>s+walls(r),0),[project.rooms])
- const modules:[ModuleName,typeof Ruler,string][]=[['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
+ const modules:[ModuleName,typeof Ruler,string][]=[['Работы',Wrench,'#eef4ff'],['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
  const patch=(x:Partial<Project>)=>onUpdate({...project,...x})
  return <div className="app"><header className="topbar detail"><button className="back" onClick={onBack}><ArrowLeft/></button><div><div className="eyebrow">ОБЪЕКТ</div><h1>{project.name}</h1></div><button className="more" onClick={()=>{if(confirm('Удалить объект?'))onDelete()}}><Trash2/></button></header>
  <main className="content"><div className="project-info">{project.address&&<span><MapPin size={16}/>{project.address}</span>}{project.client&&<span><UserRound size={16}/>{project.client}</span>}</div>
  <div className="stats"><div><b>{floor.toFixed(1)}</b><span>м² пола</span></div><div><b>{wall.toFixed(1)}</b><span>м² стен</span></div><div><b>{project.rooms.length}</b><span>помещений</span></div></div>
  <div className="section-title"><h2>Разделы</h2></div><div className="modules">{modules.map(([name,Icon,bg])=><button className={`module ${active===name?'active':''}`} key={name} onClick={()=>setActive(name)} style={{'--bg':bg} as CSSProperties}><Icon/><b>{name}</b><ChevronRight/></button>)}</div>
+ {active==='Работы'&&<WorkPlanner project={project} onUpdate={patch}/>}
  {active==='Замеры'&&<Measurements project={project} onAdd={()=>{setEditingRoom(null);setRoomModal(true)}} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={()=>{}}/>}
  {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
  {active==='Смета'&&<Estimate project={project}/>}
