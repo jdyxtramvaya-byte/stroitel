@@ -1,3 +1,4 @@
+import {getMaterialSpec} from './materialCatalog'
 import {useEffect,useMemo,useState} from 'react'
 import type {CSSProperties} from 'react'
 import WorkPlanner from './WorkPlanner'
@@ -9,7 +10,7 @@ type Material={id:string,name:string,unit:string,qty:number,price:number,bought:
 type DiaryEntry={id:string,date:string,text:string}
 type Issue={id:string,title:string,priority:'low'|'medium'|'high',status:'open'|'done'}
 type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],works?:any[],createdAt:string}
-type ModuleName='Работы'|'Замеры'|'Материалы'|'Цены'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
+type ModuleName='Работы'|'Замеры'|'Материалы'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
 const KEY='stroitel-projects-v1'
 const uid=()=>crypto.randomUUID?.()??Date.now().toString(36)+Math.random().toString(36).slice(2)
 const normalize=(p:any):Project=>({...p,materials:p.materials??[],diary:p.diary??[],issues:p.issues??[],works:p.works??[]})
@@ -44,7 +45,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  const [active,setActive]=useState<ModuleName>('Замеры'),[roomModal,setRoomModal]=useState(false),[editingRoom,setEditingRoom]=useState<Room|null>(null)
  const floor=useMemo(()=>project.rooms.reduce((s,r)=>s+area(r),0),[project.rooms])
  const wall=useMemo(()=>project.rooms.reduce((s,r)=>s+walls(r),0),[project.rooms])
- const modules:[ModuleName,typeof Ruler,string][]=[['Работы',Wrench,'#eef4ff'],['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Цены',CircleDollarSign,'#eef8ff'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
+ const modules:[ModuleName,typeof Ruler,string][]=[['Работы',Wrench,'#eef4ff'],['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
  const patch=(x:Partial<Project>)=>onUpdate({...project,...x})
  return <div className="app"><header className="topbar detail"><button className="back" onClick={onBack}><ArrowLeft/></button><div><div className="eyebrow">ОБЪЕКТ</div><h1>{project.name}</h1></div><button className="more" onClick={()=>{if(confirm('Удалить объект?'))onDelete()}}><Trash2/></button></header>
  <main className="content"><div className="project-info">{project.address&&<span><MapPin size={16}/>{project.address}</span>}{project.client&&<span><UserRound size={16}/>{project.client}</span>}</div>
@@ -53,7 +54,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  {active==='Работы'&&<WorkPlanner project={project} onUpdate={patch}/>}
  {active==='Замеры'&&<Measurements project={project} onAdd={()=>{setEditingRoom(null);setRoomModal(true)}} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={id=>patch({rooms:project.rooms.filter(r=>r.id!==id)})}/>}
  {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
- {active==='Цены'&&<PriceFinder materials={project.materials}/>} 
+  
  {active==='Смета'&&<Estimate project={project}/>}
  {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
  {active==='Дневник'&&<Diary project={project} onUpdate={patch}/>}
@@ -75,9 +76,11 @@ function Measurements({project,onAdd,onEdit,onDelete}:{project:Project,onAdd:()=
 function Materials({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
  const [name,setName]=useState(''),[unit,setUnit]=useState('шт'),[qty,setQty]=useState(''),[price,setPrice]=useState('')
  const total=project.materials.reduce((s,m)=>s+m.qty*m.price,0)
- const add=()=>{if(!name.trim()||+qty<=0)return;onUpdate({materials:[...project.materials,{id:uid(),name:name.trim(),unit,qty:+qty,price:+price||0,bought:false}]});setName('');setQty('');setPrice('')}
- return <><div className="section-title"><h2>Материалы</h2><b>{money(total)}</b></div><div className="form-card"><label>Материал<input value={name} onChange={e=>setName(e.target.value)} placeholder="Цемент М500"/></label><div className="grid3"><label>Ед.<select value={unit} onChange={e=>setUnit(e.target.value)}><option>шт</option><option>кг</option><option>м²</option><option>м³</option><option>м</option><option>л</option></select></label><label>Количество<input inputMode="decimal" value={qty} onChange={e=>setQty(e.target.value)} placeholder="10"/></label><label>Цена<input inputMode="decimal" value={price} onChange={e=>setPrice(e.target.value)} placeholder="500"/></label></div><button className="primary wide" onClick={add} disabled={!name.trim()||+qty<=0}>Добавить материал</button></div>
- <div className="material-list">{project.materials.length===0?<div className="empty compact"><Boxes size={28}/><b>Список пока пуст</b><p>Добавляй материалы — здесь будет стоимость объекта.</p></div>:project.materials.map(m=><div className="material-row" key={m.id}><div><b>{m.name}</b><span>{m.qty} {m.unit} × {money(m.price)}{m.packages?` · ${m.packages} ${m.packageUnit||'уп.'}`:''}</span></div><strong>{money(m.qty*m.price)}</strong><button className="icon-btn" onClick={()=>onUpdate({materials:project.materials.filter(x=>x.id!==m.id)})}><X size={16}/></button></div>)}</div></>
+ const catalog=[{name:'Сухая смесь для стяжки',unit:'кг',price:0},{name:'Штукатурная смесь',unit:'кг',price:0},{name:'Шпаклёвка',unit:'кг',price:0},{name:'Грунтовка',unit:'л',price:0},{name:'Краска',unit:'л',price:0},{name:'Плитка',unit:'м²',price:0},{name:'Плиточный клей',unit:'кг',price:0}]
+ const selectMaterial=(value:string)=>{const x=catalog.find(v=>v.name===value);if(!x)return;setName(x.name);setUnit(x.unit);setPrice(x.price?'':price)}
+ const add=()=>{if(!name.trim()||+qty<=0)return;const spec=getMaterialSpec(name.trim(),unit);onUpdate({materials:[...project.materials,{id:uid(),name:name.trim(),unit,qty:+qty,price:+price||0,bought:false,packageSize:spec?.packageSize,packageUnit:spec?.packageUnit,packages:spec?Math.ceil(+qty/spec.packageSize):undefined}]});setName('');setQty('');setPrice('')}
+ return <><div className="section-title"><h2>Материалы</h2><b>{money(total)}</b></div><div className="form-card"><label>Материал<select value={name} onChange={e=>selectMaterial(e.target.value)}><option value="">Выбрать материал</option>{catalog.map(x=><option key={x.name}>{x.name}</option>)}</select></label><div className="grid3"><label>Ед.<select value={unit} onChange={e=>setUnit(e.target.value)}><option>шт</option><option>кг</option><option>м²</option><option>м³</option><option>м</option><option>л</option></select></label><label>Количество<input inputMode="decimal" value={qty} onChange={e=>setQty(e.target.value)} placeholder="10"/></label><label>Цена за единицу<input inputMode="decimal" value={price} onChange={e=>setPrice(e.target.value)} placeholder="Введите цену"/></label></div><div className="info-box">Цены лучше получать из выбранного магазина/поставщика. После подключения источника цена будет подставляться автоматически; сейчас ручная цена не подменяется выдуманными данными.</div><button className="primary wide" onClick={add} disabled={!name.trim()||+qty<=0}>Добавить материал</button></div>
+ <div className="material-list">{project.materials.length===0?<div className="empty compact"><Boxes size={28}/><b>Список пока пуст</b><p>Добавляй материалы — здесь будет стоимость объекта.</p></div>:project.materials.map(m=><div className="material-row" key={m.id}><div><b>{m.name}</b><span>{m.qty} {m.unit} × {money(m.price)}{m.packages?\` · ${m.packages} ${m.packageUnit||'уп.'}\`:''}</span></div><strong>{money(m.qty*m.price)}</strong><button className="icon-btn" onClick={()=>onUpdate({materials:project.materials.filter(x=>x.id!==m.id)})}><X size={16}/></button></div>)}</div></>
 }
 
 function Estimate({project}:{project:Project}){
