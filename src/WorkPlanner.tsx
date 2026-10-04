@@ -3,8 +3,17 @@ import {Check,Trash2,Wrench,Package} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
 type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean}
+type Product={id:string,name:string,brand:string,unit:string,packSize:number,packUnit:string,consumption:number,consumptionUnit:string}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type Project={rooms:Room[],materials:Material[],works?:Work[]}
+
+const products:Record<string,Product[]>= {
+ 'Стяжка пола':[{id:'screed-standard',name:'Сухая смесь для стяжки',brand:'Стандарт',unit:'кг',packSize:25,packUnit:'мешок',consumption:20,consumptionUnit:'кг/м²/см'}],
+ 'Штукатурка стен':[{id:'knauf-mp75',name:'MP 75',brand:'Knauf',unit:'кг',packSize:30,packUnit:'мешок',consumption:0.9,consumptionUnit:'кг/м²/мм'},{id:'volma-sloy',name:'Слой',brand:'ВОЛМА',unit:'кг',packSize:30,packUnit:'мешок',consumption:0.9,consumptionUnit:'кг/м²/мм'}],
+ 'Шпаклёвка стен':[{id:'putty-standard',name:'Шпаклёвка',brand:'Стандарт',unit:'кг',packSize:20,packUnit:'мешок',consumption:1,consumptionUnit:'кг/м²/мм'}],
+ 'Покраска стен':[{id:'paint-standard',name:'Интерьерная краска',brand:'Стандарт',unit:'л',packSize:10,packUnit:'ведро',consumption:0.18,consumptionUnit:'л/м²/слой'}],
+ 'Укладка плитки':[{id:'tile-standard',name:'Плитка',brand:'Стандарт',unit:'м²',packSize:1.44,packUnit:'коробка',consumption:1,consumptionUnit:'м²/м²'},{id:'tile-glue-standard',name:'Плиточный клей',brand:'Стандарт',unit:'кг',packSize:25,packUnit:'мешок',consumption:3.5,consumptionUnit:'кг/м²'}]
+}
 
 const presets=[
  {name:'Стяжка пола',kind:'floor'},
@@ -29,11 +38,11 @@ const calc=(work:Work,rooms:Room)=>{
  const floor=selected.reduce((s,r)=>s+r.length*r.width,0)
  const wall=selected.reduce((s,r)=>s+2*(r.length+r.width)*r.height,0)
  const reserve=1+work.reserve/100
- if(work.name==='Стяжка пола')return [{name:'Сухая смесь для стяжки',unit:'кг',qty:floor*(work.thickness/10)*20*reserve}]
- if(work.name==='Штукатурка стен')return [{name:'Штукатурная смесь',unit:'кг',qty:wall*work.thickness*1.2*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.15*reserve}]
- if(work.name==='Шпаклёвка стен')return [{name:'Шпаклёвка',unit:'кг',qty:wall*work.thickness*1*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.12*reserve}]
- if(work.name==='Покраска стен')return [{name:'Краска',unit:'л',qty:wall*0.18*work.coats*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.12*reserve}]
- if(work.name==='Укладка плитки')return [{name:'Плитка',unit:'м²',qty:wall*reserve},{name:'Плиточный клей',unit:'кг',qty:wall*4.5*reserve}]
+ if(work.name==='Стяжка пола')return [{name:work.product?.name||'Сухая смесь для стяжки',unit:work.product?.unit||'кг',qty:floor*(work.thickness/10)*(work.product?.consumption||20)*reserve}]
+ if(work.name==='Штукатурка стен')return [{name:work.product?.name||'Штукатурная смесь',unit:work.product?.unit||'кг',qty:wall*work.thickness*(work.product?.consumption||0.9)*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.15*reserve}]
+ if(work.name==='Шпаклёвка стен')return [{name:work.product?.name||'Шпаклёвка',unit:work.product?.unit||'кг',qty:wall*work.thickness*(work.product?.consumption||1)*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.12*reserve}]
+ if(work.name==='Покраска стен')return [{name:work.product?.name||'Краска',unit:work.product?.unit||'л',qty:wall*(work.product?.consumption||0.18)*work.coats*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.12*reserve}]
+ if(work.name==='Укладка плитки')return [{name:'Плитка',unit:'м²',qty:wall*reserve},{name:'Плиточный клей',unit:'кг',qty:wall*3.5*reserve}]
  return []
 }
 
@@ -51,6 +60,9 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const [thickness,setThickness]=useState('50')
  const [coats,setCoats]=useState('2')
  const [reserve,setReserve]=useState('10')
+ const [productId,setProductId]=useState('')
+ const productOptions=products[name]??[]
+ const product=productOptions.find(x=>x.id===productId)??productOptions[0]
 
  const totals=useMemo(()=>{
   const map=new Map<string,{unit:string,qty:number}>()
@@ -73,8 +85,9 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  }
 
  const add=()=>{
-  if(!name||roomIds.length===0)return
-  const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false}
+  const selected=productOptions.find(x=>x.id===productId)??productOptions[0]
+  if(!name||roomIds.length===0||!selected)return
+  const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,productId:selected.id,product:selected}
   onUpdate({works:[...works,work]})
  }
 
@@ -85,6 +98,8 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   {project.rooms.length===0?<div className="empty compact"><b>Сначала добавь помещение</b><p>После замеров здесь можно назначать работы.</p></div>:<>
    <div className="form-card">
     <label>Работа<select value={name} onChange={e=>setName(e.target.value)}>{presets.map(p=><option key={p.name}>{p.name}</option>)}</select></label>
+    <label>Конкретный материал<select value={productId||product?.id||''} onChange={e=>setProductId(e.target.value)}>{productOptions.map(p=><option key={p.id} value={p.id}>{p.brand} · {p.name} · {p.packSize} {p.unit}/{p.packUnit}</option>)}</select></label>
+    {product&&<div className="info-box">Норма расхода: {product.consumption} {product.consumptionUnit}</div>}
     <label>Помещения</label>
     <div className="room-picker">{project.rooms.map(r=><button type="button" className={roomIds.includes(r.id)?'selected':''} key={r.id} onClick={()=>toggleRoom(r.id)}><span>{roomIds.includes(r.id)&&<Check size={14}/>}</span>{r.name}</button>)}</div>
     <div className="grid3"><label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label><label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label><label>Запас, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label></div>
