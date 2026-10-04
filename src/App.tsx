@@ -11,6 +11,7 @@ type DiaryEntry={id:string,date:string,text:string}
 type Issue={id:string,title:string,priority:'low'|'medium'|'high',status:'open'|'done'}
 type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],works?:any[],createdAt:string}
 type ModuleName='Работы'|'Замеры'|'Материалы'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
+type ProjectTab='Обзор'|ModuleName
 const KEY='stroitel-projects-v1'
 const uid=()=>crypto.randomUUID?.()??Date.now().toString(36)+Math.random().toString(36).slice(2)
 const normalize=(p:any):Project=>({...p,materials:p.materials??[],diary:p.diary??[],issues:p.issues??[],works:p.works??[]})
@@ -43,26 +44,76 @@ function HomeView({projects,onOpen,onAdd}:{projects:Project[],onOpen:(id:string)
 }
 
 function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:()=>void,onUpdate:(p:Project)=>void,onDelete:()=>void}){
- const [active,setActive]=useState<ModuleName>('Замеры'),[roomModal,setRoomModal]=useState(false),[editingRoom,setEditingRoom]=useState<Room|null>(null)
+ const [active,setActive]=useState<ProjectTab>('Обзор'),[roomModal,setRoomModal]=useState(false),[editingRoom,setEditingRoom]=useState<Room|null>(null),[moreOpen,setMoreOpen]=useState(false)
  const floor=useMemo(()=>project.rooms.reduce((s,r)=>s+area(r),0),[project.rooms])
  const wall=useMemo(()=>project.rooms.reduce((s,r)=>s+walls(r),0),[project.rooms])
+ const materialTotal=useMemo(()=>project.materials.reduce((s,m)=>s+m.qty*m.price,0),[project.materials])
+ const openIssues=project.issues.filter(i=>i.status==='open').length
+ const progress=Math.min(100,Math.round(((project.rooms.length>0?1:0)+(project.materials.length>0?1:0)+(project.works?.length?1:0)+(project.diary.length>0?1:0))/4*100))
  const modules:[ModuleName,typeof Ruler,string][]=[['Работы',Wrench,'#eef4ff'],['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
  const patch=(x:Partial<Project>)=>onUpdate({...project,...x})
- return <div className="app"><header className="topbar detail"><button className="back" onClick={onBack}><ArrowLeft/></button><div><div className="eyebrow">ОБЪЕКТ</div><h1>{project.name}</h1></div><button className="more" onClick={()=>{if(confirm('Удалить объект?'))onDelete()}}><Trash2/></button></header>
- <main className="content"><section className="project-head-card"><div className="project-head-top"><div className="project-mark"><Building2 size={22}/></div><div className="project-head-copy"><span>АКТИВНЫЙ ОБЪЕКТ</span><h2>{project.name}</h2></div></div><div className="project-meta">{project.address&&<span><MapPin size={14}/>{project.address}</span>}{project.client&&<span><UserRound size={14}/>{project.client}</span>}</div><div className="project-progress"><div><span>Заполнено</span><b>{Math.min(100,Math.round(((project.rooms.length>0?1:0)+(project.materials.length>0?1:0)+(project.works?.length?1:0)+(project.diary.length>0?1:0))/4*100))}%</b></div><div className="progress-track"><i style={{width:`${Math.min(100,Math.round(((project.rooms.length>0?1:0)+(project.materials.length>0?1:0)+(project.works?.length?1:0)+(project.diary.length>0?1:0))/4*100))}%`}}/></div></div></section>
- <div className="stats"><div><b>{floor.toFixed(1)}</b><span>м² пола</span></div><div><b>{wall.toFixed(1)}</b><span>м² стен</span></div><div><b>{project.rooms.length}</b><span>помещений</span></div></div>
- <div className="section-title"><div><h2>Рабочие разделы</h2><small className="section-caption">Выбери, что нужно сделать</small></div></div><div className="modules">{modules.map(([name,Icon,bg])=><button className={`module ${active===name?'active':''}`} key={name} onClick={()=>setActive(name)} style={{'--bg':bg} as CSSProperties}><Icon/><b>{name}</b><ChevronRight/></button>)}</div>
- {active==='Работы'&&<WorkPlanner project={project} onUpdate={patch}/>}
- {active==='Замеры'&&<Measurements project={project} onAdd={()=>{setEditingRoom(null);setRoomModal(true)}} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={id=>patch({rooms:project.rooms.filter(r=>r.id!==id)})}/>}
- {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
-  
- {active==='Смета'&&<Estimate project={project}/>}
- {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
- {active==='Дневник'&&<Diary project={project} onUpdate={patch}/>}
- {active==='Проблемы'&&<Problems project={project} onUpdate={patch}/>}
-  </main>{roomModal&&<RoomModal room={editingRoom} onClose={()=>{setRoomModal(false);setEditingRoom(null)}} onSave={r=>{patch({rooms:editingRoom?project.rooms.map(x=>x.id===editingRoom.id?{...r,id:x.id}:x):[...project.rooms,{...r,id:uid()}]});setRoomModal(false);setEditingRoom(null)}}/>}</div>
+ const go=(tab:ProjectTab)=>{setActive(tab);setMoreOpen(false);window.scrollTo({top:0,behavior:'smooth'})}
+ const showRoomModal=()=>{setEditingRoom(null);setRoomModal(true)}
+ return <div className="app project-app">
+  <header className="topbar detail"><button className="back" onClick={onBack}><ArrowLeft/></button><div><div className="eyebrow">ОБЪЕКТ</div><h1>{project.name}</h1></div><button className="more" onClick={()=>{if(confirm('Удалить объект?'))onDelete()}}><Trash2/></button></header>
+  <main className="content project-content">
+   <section className="project-head-card">
+    <div className="project-head-top"><div className="project-mark"><Building2 size={22}/></div><div className="project-head-copy"><span>АКТИВНЫЙ ОБЪЕКТ</span><h2>{project.name}</h2></div></div>
+    <div className="project-meta">{project.address&&<span><MapPin size={14}/>{project.address}</span>}{project.client&&<span><UserRound size={14}/>{project.client}</span>}</div>
+    <div className="project-progress"><div><span>Заполнено</span><b>{progress}%</b></div><div className="progress-track"><i style={{width:`${progress}%`}}/></div></div>
+   </section>
+
+   {active==='Обзор'&&<ProjectOverview project={project} floor={floor} materialTotal={materialTotal} openIssues={openIssues} progress={progress} onGo={go} onAddRoom={showRoomModal}/>}
+   {active!=='Обзор'&&<div className="module-content">
+    <div className="module-breadcrumb"><span>РАЗДЕЛ</span><b>{active}</b></div>
+    {active==='Работы'&&<WorkPlanner project={project} onUpdate={patch}/>}
+    {active==='Замеры'&&<Measurements project={project} onAdd={showRoomModal} onEdit={r=>{setEditingRoom(r);setRoomModal(true)}} onDelete={id=>patch({rooms:project.rooms.filter(r=>r.id!==id)})}/>}
+    {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
+    {active==='Смета'&&<Estimate project={project}/>}
+    {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
+    {active==='Дневник'&&<Diary project={project} onUpdate={patch}/>}
+    {active==='Проблемы'&&<Problems project={project} onUpdate={patch}/>}
+   </div>}
+  </main>
+
+  {moreOpen&&<div className="more-sheet"><button className="sheet-backdrop" aria-label="Закрыть меню" onClick={()=>setMoreOpen(false)}/><div className="more-sheet-card"><div className="sheet-handle"/><div className="sheet-title"><div><span>РАЗДЕЛЫ ОБЪЕКТА</span><b>Все инструменты</b></div><button className="close" onClick={()=>setMoreOpen(false)}>×</button></div><div className="more-grid">{modules.map(([name,Icon,bg])=><button key={name} className={`more-item ${active===name?'active':''}`} onClick={()=>go(name)} style={{'--bg':bg} as CSSProperties}><span className="more-item-icon"><Icon size={19}/></span><span>{name}</span><ChevronRight size={16}/></button>)}</div></div></div>}
+
+  <nav className="bottom-nav" aria-label="Навигация по объекту">
+   <button className={active==='Обзор'?'active':''} onClick={()=>go('Обзор')}><Home size={20}/><span>Обзор</span></button>
+   <button className={active==='Работы'?'active':''} onClick={()=>go('Работы')}><Wrench size={20}/><span>Работы</span></button>
+   <button className={active==='Материалы'?'active':''} onClick={()=>go('Материалы')}><Boxes size={20}/><span>Материалы</span></button>
+   <button className={moreOpen?'active':''} onClick={()=>setMoreOpen(v=>!v)}><ChevronRight className="more-nav-icon" size={20}/><span>Ещё</span></button>
+  </nav>
+
+  {roomModal&&<RoomModal room={editingRoom} onClose={()=>{setRoomModal(false);setEditingRoom(null)}} onSave={r=>{patch({rooms:editingRoom?project.rooms.map(x=>x.id===editingRoom.id?{...r,id:x.id}:x):[...project.rooms,{...r,id:uid()}]});setRoomModal(false);setEditingRoom(null)}}/>}
+ </div>
 }
 
+function ProjectOverview({project,floor,materialTotal,openIssues,progress,onGo,onAddRoom}:{project:Project,floor:number,materialTotal:number,openIssues:number,progress:number,onGo:(tab:ProjectTab)=>void,onAddRoom:()=>void}){
+ const recentDiary=project.diary.slice(0,2)
+ return <div className="overview">
+  <div className="overview-heading"><div><span className="section-kicker">ОБЗОР ОБЪЕКТА</span><h2>Что происходит сейчас</h2></div><span className="overview-status">{progress}%</span></div>
+  <div className="overview-kpis">
+   <button onClick={()=>onGo('Замеры')}><span><Ruler size={17}/></span><b>{floor.toFixed(1)} м²</b><small>Площадь пола</small></button>
+   <button onClick={()=>onGo('Материалы')}><span><CircleDollarSign size={17}/></span><b>{money(materialTotal)}</b><small>Материалы</small></button>
+   <button onClick={()=>onGo('Проблемы')}><span><AlertTriangle size={17}/></span><b>{openIssues}</b><small>Открытых проблем</small></button>
+   <button onClick={()=>onGo('Работы')}><span><Wrench size={17}/></span><b>{project.works?.length??0}</b><small>Работ</small></button>
+  </div>
+  <div className="quick-actions">
+   <div className="section-title"><div><h2>Быстрые действия</h2><small className="section-caption">Добавляй данные прямо с объекта</small></div></div>
+   <div className="quick-grid">
+    <button onClick={onAddRoom}><Ruler size={19}/><span>Добавить замер</span></button>
+    <button onClick={()=>onGo('Работы')}><Wrench size={19}/><span>Добавить работу</span></button>
+    <button onClick={()=>onGo('Материалы')}><Boxes size={19}/><span>Добавить материал</span></button>
+    <button onClick={()=>onGo('Дневник')}><BookOpen size={19}/><span>Записать в дневник</span></button>
+   </div>
+  </div>
+  <div className="overview-columns">
+   <section className="overview-panel"><div className="panel-head"><div><span>ПОСЛЕДНИЕ ЗАПИСИ</span><b>Дневник</b></div><button onClick={()=>onGo('Дневник')}>Все</button></div>{recentDiary.length===0?<div className="panel-empty"><BookOpen size={20}/><span>Записей пока нет</span></div>:recentDiary.map(e=><article className="activity-row" key={e.id}><span className="activity-dot"/><div><b>{e.date}</b><p>{e.text}</p></div></article>)}</section>
+   <section className="overview-panel"><div className="panel-head"><div><span>ТРЕБУЕТ ВНИМАНИЯ</span><b>Проблемы</b></div><button onClick={()=>onGo('Проблемы')}>Все</button></div>{openIssues===0?<div className="panel-empty"><Check size={20}/><span>Открытых проблем нет</span></div>:project.issues.filter(i=>i.status==='open').slice(0,3).map(i=><button className="attention-row" key={i.id} onClick={()=>onGo('Проблемы')}><span className={`priority-dot ${i.priority}`}/><span>{i.title}</span><ChevronRight size={16}/></button>)}</section>
+  </div>
+ </div>
+}
 function Measurements({project,onAdd,onEdit,onDelete}:{project:Project,onAdd:()=>void,onEdit:(room:Room)=>void,onDelete:(id:string)=>void}){
  const floor=project.rooms.reduce((s,r)=>s+area(r),0)
  const wall=project.rooms.reduce((s,r)=>s+walls(r),0)
