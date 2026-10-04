@@ -1,3 +1,4 @@
+import {MATERIAL_CATALOG,getMaterialSpec} from './materialCatalog'
 import {useMemo,useState} from 'react'
 import {Check,Trash2,Wrench,Package} from 'lucide-react'
 
@@ -23,6 +24,9 @@ const presets=[
  {name:'Укладка плитки',kind:'tile'}
 ] as const
 
+const materialAliases:Record<string,string>={'MP 75':'Штукатурная смесь','Слой':'Штукатурная смесь','Интерьерная краска':'Краска'}
+const getSpec=(name:string,unit:string)=>getMaterialSpec(name,unit)??getMaterialSpec(materialAliases[name]??'',unit)
+
 const packaging:Record<string,{size:number,unit:string}>={
  'Сухая смесь для стяжки|кг':{size:25,unit:'мешок'},
  'Штукатурная смесь|кг':{size:30,unit:'мешок'},
@@ -47,7 +51,8 @@ const calc=(work:Work,rooms:Room)=>{
 }
 
 const pack=(name:string,unit:string,qty:number)=>{
- const p=packaging[name+'|'+unit]
+ const spec=getSpec(name,unit)
+ const p=packaging[name+'|'+unit]??(spec?{size:spec.packageSize,unit:spec.packageUnit}:undefined)
  if(!p)return {packages:0,purchaseQty:qty,packageSize:undefined,packageUnit:undefined}
  const packages=Math.ceil(qty/p.size)
  return {packages,purchaseQty:packages*p.size,packageSize:p.size,packageUnit:p.unit}
@@ -78,9 +83,11 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   const calculated=totals.map(m=>({...m,...pack(m.name,m.unit,m.qty)}))
   const next=project.materials.map(m=>{
    const found=calculated.find(x=>x.name===m.name&&x.unit===m.unit)
-   return found?{...m,qty:found.purchaseQty,packageSize:found.packageSize,packageUnit:found.packageUnit,packages:found.packages}:m
+   if(!found)return m
+   const spec=getSpec(m.name,m.unit)
+   return {...m,qty:found.purchaseQty,price:m.price>0?m.price:(spec?.price??0),packageSize:found.packageSize??spec?.packageSize,packageUnit:found.packageUnit??spec?.packageUnit,packages:found.packages|| (spec?Math.ceil(found.purchaseQty/spec.packageSize):m.packages)}
   })
-  calculated.filter(x=>!project.materials.some(m=>m.name===x.name&&m.unit===x.unit)).forEach(x=>next.push({id:crypto.randomUUID(),name:x.name,unit:x.unit,qty:x.purchaseQty,price:0,bought:false,packageSize:x.packageSize,packageUnit:x.packageUnit,packages:x.packages}))
+  calculated.filter(x=>!project.materials.some(m=>m.name===x.name&&m.unit===x.unit)).forEach(x=>{const spec=getSpec(x.name,x.unit);next.push({id:crypto.randomUUID(),name:x.name,unit:x.unit,qty:x.purchaseQty,price:spec?.price??0,bought:false,packageSize:x.packageSize??spec?.packageSize,packageUnit:x.packageUnit??spec?.packageUnit,packages:x.packages||(spec?Math.ceil(x.purchaseQty/spec.packageSize):undefined)})})
   onUpdate({materials:next})
  }
 
