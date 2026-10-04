@@ -9,12 +9,12 @@ type Room={id:string,name:string,length:number,width:number,height:number}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type DiaryEntry={id:string,date:string,text:string}
 type Issue={id:string,title:string,priority:'low'|'medium'|'high',status:'open'|'done'}
-type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],works?:any[],profitPercent?:number,createdAt:string}
+type Project={id:string,name:string,address:string,client:string,rooms:Room[],materials:Material[],diary:DiaryEntry[],issues:Issue[],works?:any[],profitPercent?:number,useMarkup?:boolean,createdAt:string}
 type ModuleName='Работы'|'Замеры'|'Материалы'|'Смета'|'Закупки'|'Дневник'|'Проблемы'
 type ProjectTab='Обзор'|ModuleName
 const KEY='stroitel-projects-v1'
 const uid=()=>crypto.randomUUID?.()??Date.now().toString(36)+Math.random().toString(36).slice(2)
-const normalize=(p:any):Project=>({...p,materials:p.materials??[],diary:p.diary??[],issues:p.issues??[],works:p.works??[]})
+const normalize=(p:any):Project=>({...p,materials:p.materials??[],diary:p.diary??[],issues:p.issues??[],works:p.works??[],useMarkup:p.useMarkup!==false})
 const load=():Project[]=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]').map(normalize)}catch{return[]}}
 const save=(p:Project[])=>localStorage.setItem(KEY,JSON.stringify(p))
 const area=(r:Room)=>r.length*r.width
@@ -26,7 +26,7 @@ export default function App(){
  useEffect(()=>save(projects),[projects])
  const project=projects.find(p=>p.id===selected)
  const addProject=(x:Omit<Project,'id'|'rooms'|'materials'|'diary'|'issues'|'createdAt'>)=>{
-  const p={...x,id:uid(),rooms:[],materials:[],diary:[],issues:[],works:[],createdAt:new Date().toISOString()}
+  const p={...x,id:uid(),rooms:[],materials:[],diary:[],issues:[],works:[],useMarkup:true,createdAt:new Date().toISOString()}
   setProjects(v=>[p,...v]);setSelected(p.id);setModal(false)
  }
  const updateProject=(next:Project)=>setProjects(v=>v.map(p=>p.id===next.id?next:p))
@@ -154,38 +154,40 @@ function Estimate({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Projec
  const direct=materials+labor
  const [margin,setMargin]=useState(String(project.profitPercent??20))
  const [preview,setPreview]=useState(false)
+ const markupEnabled=project.useMarkup!==false
  const pct=Math.max(0,Number(margin.replace(',','.'))||0)
- const profit=direct*pct/100
+ const profit=markupEnabled?direct*pct/100:0
  const total=direct+profit
  const areaTotal=project.rooms.reduce((s,r)=>s+area(r),0)
  const open=works.filter(w=>!w.done).length
  const saveMargin=()=>onUpdate({profitPercent:pct})
- const estimateText=()=>{const lines=works.map(w=>'• '+w.name+' — '+money(Number(w.laborPrice)||0)).join('\n');return 'Смета: '+project.name+'\nЗаказчик: '+(project.client||'—')+'\n\nМатериалы: '+money(materials)+'\nРаботы: '+money(labor)+'\nСебестоимость: '+money(direct)+'\nПрибыль ('+pct+'%): '+money(profit)+'\nИТОГО: '+money(total)+(lines?'\n\nРаботы:\n'+lines:'')}
+ const toggleMarkup=()=>onUpdate({useMarkup:!markupEnabled})
+ const estimateText=()=>{const lines=works.map(w=>'• '+w.name+' — '+money(Number(w.laborPrice)||0)).join('\n');return 'Смета: '+project.name+'\nЗаказчик: '+(project.client||'—')+'\n\nМатериалы: '+money(materials)+'\nРаботы: '+money(labor)+'\nИТОГО К ОПЛАТЕ: '+money(total)+(lines?'\n\nРаботы:\n'+lines:'')}
  const shareEstimate=async()=>{const text=estimateText();if(navigator.share){try{await navigator.share({title:'Смета — '+project.name,text})}catch{}}else{await navigator.clipboard?.writeText(text);alert('Смета скопирована в буфер обмена.')}}
  const printEstimate=()=>window.print()
  return <section className="compact-module"><div className="module-hero"><div><span className="section-kicker">ФИНАНСЫ</span><h2>Смета</h2><p>{works.length} работ · {project.materials.length} материалов · расчёт цены объекта.</p></div><CircleDollarSign size={22}/></div>
- <div className="estimate-main"><div className="estimate-lead"><span>ИТОГО ДЛЯ ЗАКАЗЧИКА</span><b>{money(total)}</b><small>С учётом {pct}% прибыли</small></div>
- <div className="estimate-breakdown"><div><span>Материалы</span><b>{money(materials)}</b></div><div><span>Работа</span><b>{money(labor)}</b></div><div><span>Себестоимость</span><b>{money(direct)}</b></div><div><span>Прибыль</span><b>{money(profit)}</b></div></div></div>
- <div className="estimate-settings"><div><div><b>Наценка / прибыль</b><span>Процент добавляется к себестоимости материалов и работ.</span></div><label><input inputMode="decimal" value={margin} onChange={e=>setMargin(e.target.value)} onBlur={saveMargin}/> %</label></div></div>
- <div className="estimate-actions no-print"><button className="secondary" onClick={()=>setPreview(true)}><Eye size={16}/> Показать заказчику</button><button className="primary" onClick={printEstimate}><Printer size={16}/> Печать / PDF</button><button className="secondary" onClick={shareEstimate}><Share2 size={16}/> Отправить</button></div>
+ <div className="estimate-main"><div className="estimate-lead"><span>ИТОГО ДЛЯ ЗАКАЗЧИКА</span><b>{money(total)}</b><small>{markupEnabled?'С учётом '+pct+'% наценки':'Без наценки'}</small></div>
+ <div className="estimate-breakdown"><div><span>Материалы</span><b>{money(materials)}</b></div><div><span>Работа</span><b>{money(labor)}</b></div><div><span>Себестоимость</span><b>{money(direct)}</b></div><div><span>{markupEnabled?'Прибыль':'Наценка отключена'}</span><b>{money(profit)}</b></div></div></div>
+ <div className="estimate-settings"><div><div><b>Наценка</b><span>{markupEnabled?'Добавляется к себестоимости материалов и работ.':'Цена заказчику равна себестоимости.'}</span></div><label><button type="button" className={markupEnabled?'primary':'secondary'} onClick={toggleMarkup}>{markupEnabled?'Включена':'Выключена'}</button>{markupEnabled&&<><input inputMode="decimal" value={margin} onChange={e=>setMargin(e.target.value)} onBlur={saveMargin}/> %</>}</label></div></div>
+ <div className="estimate-actions no-print"><button className="secondary" onClick={()=>setPreview(true)}><Eye size={16}/> Показать заказчику</button><button className="primary" onClick={()=>setPreview(true)}><Printer size={16}/> Печать / PDF</button><button className="secondary" onClick={shareEstimate}><Share2 size={16}/> Отправить</button></div>
  <div className="estimate-status"><span>{open===0&&works.length>0?'Все работы выполнены':('Осталось работ: '+open)}</span><span>{areaTotal.toFixed(1)} м² объекта</span></div>
  <div className="estimate-list"><div className="section-title"><div><h2>Работы</h2><span>Цена работы задаётся при добавлении.</span></div></div>{works.length===0?<div className="empty compact"><Wrench size={26}/><b>Работ пока нет</b><p>Добавь работы — они появятся в смете автоматически.</p></div>:works.map(w=><div className="estimate-line" key={w.id}><div><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></div><strong>{money(Number(w.laborPrice)||0)}</strong></div>)}</div>
- {preview&&<EstimatePreview project={project} works={works} materials={materials} labor={labor} direct={direct} profit={profit} total={total} pct={pct} onClose={()=>setPreview(false)} onPrint={printEstimate}/>}
+ {preview&&<EstimatePreview project={project} works={works} materialsList={project.materials} materials={materials} labor={labor} total={total} onClose={()=>setPreview(false)} onPrint={printEstimate}/>}
  </section>
 }
 
-function EstimatePreview({project,works,materials,labor,direct,profit,total,pct,onClose,onPrint}:{project:Project,works:any[],materials:number,labor:number,direct:number,profit:number,total:number,pct:number,onClose:()=>void,onPrint:()=>void}){
- return <div className="estimate-preview-overlay"><div className="estimate-preview-shell"><div className="estimate-preview-toolbar no-print"><b>Предпросмотр сметы</b><div><button className="secondary" onClick={onClose}>Закрыть</button><button className="primary" onClick={onPrint}><Printer size={16}/> Печать / PDF</button></div></div><article className="estimate-document" id="customer-estimate">
-<header><div><span>СМЕТА</span><h1>{project.name}</h1><p>{project.address||'Адрес не указан'}</p></div><div className="estimate-doc-total"><small>ИТОГО</small><strong>{money(total)}</strong></div></header>
-<div className="estimate-doc-meta"><span>Заказчик <b>{project.client||'Не указан'}</b></span><span>Площадь <b>{project.rooms.reduce((s,r)=>s+area(r),0).toFixed(1)} м²</b></span><span>Наценка <b>{pct}%</b></span></div>
-<h2>Расчёт стоимости</h2>
-<div className="estimate-doc-table"><div className="estimate-doc-row head"><span>Позиция</span><span>Стоимость</span></div><div className="estimate-doc-row"><span>Материалы</span><b>{money(materials)}</b></div><div className="estimate-doc-row"><span>Работы</span><b>{money(labor)}</b></div><div className="estimate-doc-row"><span>Себестоимость</span><b>{money(direct)}</b></div><div className="estimate-doc-row profit"><span>Прибыль / наценка</span><b>{money(profit)}</b></div><div className="estimate-doc-row total"><span>ИТОГО К ОПЛАТЕ</span><b>{money(total)}</b></div></div>
+function EstimatePreview({project,works,materialsList,materials,labor,total,onClose,onPrint}:{project:Project,works:any[],materialsList:Material[],materials:number,labor:number,total:number,onClose:()=>void,onPrint:()=>void}){
+ return <div className="estimate-preview-overlay"><div className="estimate-preview-shell"><div className="estimate-preview-toolbar no-print"><b>Предпросмотр для заказчика</b><div><button className="secondary" onClick={onClose}>Закрыть</button><button className="primary" onClick={onPrint}><Printer size={16}/> Печать / PDF</button></div></div><article className="estimate-document" id="customer-estimate">
+<header><div><span>СМЕТА</span><h1>{project.name}</h1><p>{project.address||'Адрес не указан'}</p></div><div className="estimate-doc-total"><small>ИТОГО К ОПЛАТЕ</small><strong>{money(total)}</strong></div></header>
+<div className="estimate-doc-meta"><span>Заказчик <b>{project.client||'Не указан'}</b></span><span>Площадь <b>{project.rooms.reduce((s,r)=>s+area(r),0).toFixed(1)} м²</b></span><span>Позиции <b>{materialsList.length+works.length}</b></span></div>
+<h2>Материалы</h2>
+<div className="estimate-doc-table"><div className="estimate-doc-row head"><span>Позиция</span><span>Стоимость</span></div>{materialsList.length===0?<div className="estimate-doc-row"><span>Материалы не добавлены</span><b>—</b></div>:materialsList.map(m=><div className="estimate-doc-row" key={m.id}><span>{m.name} <small>{m.qty} {m.unit}</small></span><b>{money(m.qty*m.price)}</b></div>)}</div>
 <h2>Работы</h2>
-<div className="estimate-doc-works">{works.length===0?<p>Работы не добавлены.</p>:works.map(w=><div className="estimate-doc-work" key={w.id}><span><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></span><strong>{money(Number(w.laborPrice)||0)}</strong></div>)}</div>
+<div className="estimate-doc-table"><div className="estimate-doc-row head"><span>Работа</span><span>Стоимость</span></div>{works.length===0?<div className="estimate-doc-row"><span>Работы не добавлены</span><b>—</b></div>:works.map(w=><div className="estimate-doc-row" key={w.id}><span>{w.name} <small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></span><b>{money(Number(w.laborPrice)||0)}</b></div>)}</div>
+<div className="estimate-doc-client-total"><span>ИТОГО К ОПЛАТЕ</span><strong>{money(total)}</strong></div>
 <footer>Смета сформирована в приложении «Строитель». Стоимость является расчётной и может быть уточнена после согласования работ и материалов.</footer>
 </article></div></div>
 }
-
 function Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
  const bought=project.materials.filter(m=>m.bought).length
  const toggle=(id:string)=>onUpdate({materials:project.materials.map(m=>m.id===id?{...m,bought:!m.bought}:m)})
