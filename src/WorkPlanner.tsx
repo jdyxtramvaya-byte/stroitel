@@ -255,15 +255,19 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const [productId,setProductId]=useState('')
  const productOptions=products[name]??[]
  const product=productOptions.find(x=>x.id===productId)??productOptions[0]
+ const selectedPreset=presets.find(p=>p.name===name)
  const fieldMode=useMemo(()=>{
   const n=name.toLowerCase()
+  if(selectedPreset?.kind==='roof')return 'area'
+  if(selectedPreset?.kind==='wall')return 'wall'
+  if(selectedPreset?.kind==='floor'||selectedPreset?.kind==='tile')return 'area'
   if(/покраск|оклейк|шпакл|штукатур|облицовк.*стен|фасад|гипсокартон|перегород|кладк/.test(n))return 'wall'
-  if(/плитк|керамогранит|ламинат|линолеум|кварцвинил|паркет|пола|стяжк|площадк|отмостк|дорожк|кровл|черепиц|профнастил|фальц|шифер|ондулин|мембран|подкладочн|обрешёт|контробрешёт|основани.*кров|свес|кон[её]к.*кров|ендов|планк.*примык/.test(n))return 'area'
+  if(/плитк|керамогранит|ламинат|линолеум|кварцвинил|паркет|пола|стяжк|площадк|отмостк|дорожк/.test(n))return 'area'
   if(/кабел|труб|водопровод|канализац|дренаж|ливнев|забор|огражден|водосточ|слаботоч/.test(n))return 'length'
   if(/розет|выключател|светильник|двер|окн|подокон|радиатор|смесител|унитаз|ванн|кот[её]л|кондиционер|домофон|свай|ворот|септик|коллектор|инсталляц/.test(n))return 'count'
   if(/бетон|фундамент|котлован|транше|грунт|засыпк|опалуб|арматур|монолит|сборн.*плит/.test(n))return 'volume'
   return 'generic'
- },[name])
+ },[name,selectedPreset?.kind])
  const needsThickness=['Стяжка пола','Штукатурка стен','Шпаклёвка стен','Кладка газоблока','Кладка пеноблока','Кладка кирпича','Кладка камня','Утепление фасада','Теплоизоляция стен','Утепление кровли','Устройство ленточного фундамента','Устройство плитного фундамента'].includes(name)
  const needsCoats=/покраск|грунтовк|оклейк/.test(name.toLowerCase())
  const needsReserve=!['count','length'].includes(fieldMode)
@@ -318,7 +322,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     <label>Помещения</label>
     <div className="room-picker">{project.rooms.map(r=><button type="button" className={roomIds.includes(r.id)?'selected':''} key={r.id} onClick={()=>toggleRoom(r.id)}><span>{roomIds.includes(r.id)&&<Check size={14}/>}</span>{r.name}</button>)}</div>
     <div className="grid3">
-    {fieldMode==='area'&&<label>Площадь работ, м²<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Авто по помещениям"/></label>}
+    {fieldMode==='area'&&<label>{selectedPreset?.kind==='roof'?'Площадь кровли, м²':'Площадь работ, м²'}<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 186"/></label>}
     {fieldMode==='length'&&<label>Длина, м<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 35"/></label>}
     {fieldMode==='count'&&<label>Количество, шт.<input inputMode="numeric" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 8"/></label>}
     {fieldMode==='volume'&&<label>Объём, м³<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 12.5"/></label>}
