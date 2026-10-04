@@ -34,6 +34,15 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const [thickness,setThickness]=useState('50')
  const [coats,setCoats]=useState('2')
  const [reserve,setReserve]=useState('10')
+ const syncMaterials=()=>{
+  const calculated=totals
+  const next=project.materials.map(m=>{
+   const found=calculated.find(x=>x.name===m.name&&x.unit===m.unit)
+   return found?{...m,qty:found.qty}:m
+  })
+  calculated.filter(x=>!project.materials.some(m=>m.name===x.name&&m.unit===x.unit)).forEach(x=>next.push({id:crypto.randomUUID(),name:x.name,unit:x.unit,qty:x.qty,price:0,bought:false}))
+  onUpdate({materials:next})
+ }
  const add=()=>{
   if(!name||roomIds.length===0)return
   const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false}
@@ -60,7 +69,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     <button className="primary wide" onClick={add} disabled={!roomIds.length}>Добавить работу</button>
    </div>
    {works.length>0&&<div className="work-list">{works.map(w=><div className="work-card" key={w.id}><div><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds.includes(r.id)).map(r=>r.name).join(', ')}</small>{calc(w,project.rooms).map(m=><span key={m.name}>{m.name}: {m.qty.toFixed(1)} {m.unit}</span>)}</div><div className="work-actions"><button className="icon-btn" onClick={()=>onUpdate({works:works.map(x=>x.id===w.id?{...x,done:!x.done}:x)})}>{w.done?<Check size={17}/>:<span>○</span>}</button><button className="icon-btn danger" onClick={()=>onUpdate({works:works.filter(x=>x.id!==w.id)})}><Trash2 size={16}/></button></div></div>)}</div>}
-   <div className="section-title"><h2>Материалы по работам</h2></div>
+   <div className="section-title"><h2>Материалы по работам</h2><button className="link" onClick={syncMaterials}>Добавить в материалы</button></div>
    <div className="material-list">{totals.length===0?<div className="empty compact"><b>Добавь первую работу</b></div>:totals.map(m=><div className="material-row" key={m.name}><div><b>{m.name}</b><span>суммарно по объекту</span></div><strong>{m.qty.toFixed(1)} {m.unit}</strong></div>)}</div>
   </>}
  </section>
