@@ -183,7 +183,9 @@ function EstimatePreview({project,works,materials,labor,direct,profit,total,pct,
 <h2>Работы</h2>
 <div className="estimate-doc-works">{works.length===0?<p>Работы не добавлены.</p>:works.map(w=><div className="estimate-doc-work" key={w.id}><span><b>{w.name}</b><small>{project.rooms.filter(r=>w.roomIds?.includes(r.id)).map(r=>r.name).join(', ')||'Без помещения'}</small></span><strong>{money(Number(w.laborPrice)||0)}</strong></div>)}</div>
 <footer>Смета сформирована в приложении «Строитель». Стоимость является расчётной и может быть уточнена после согласования работ и материалов.</footer>
-</article></div></div>\n\nfunction Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
+</article></div></div>
+
+function Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
  const bought=project.materials.filter(m=>m.bought).length
  const toggle=(id:string)=>onUpdate({materials:project.materials.map(m=>m.id===id?{...m,bought:!m.bought}:m)})
  return <section className="compact-module"><div className="module-hero"><div><span className="section-kicker">СНАБЖЕНИЕ</span><h2>Закупки</h2><p>{bought} из {project.materials.length} позиций куплено.</p></div><ShoppingCart size={22}/></div>{project.materials.length===0?<div className="empty compact"><ShoppingCart size={28}/><b>Покупать пока нечего</b><p>Сначала добавь материалы.</p></div>:<div className="purchase-list">{project.materials.map(m=><button className={`purchase ${m.bought?'done':''}`} key={m.id} onClick={()=>toggle(m.id)}><span className="check">{m.bought&&<Check size={15}/>}</span><div><b>{m.name}</b><small>{m.qty} {m.unit} · {money(m.qty*m.price)}</small></div></button>)}</div>}</section>
