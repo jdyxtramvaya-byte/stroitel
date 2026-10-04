@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react'
 import type {CSSProperties} from 'react'
 import WorkPlanner from './WorkPlanner'
+import PriceFinder from './PriceFinder'
 import {Building2,Plus,Wrench,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone,PenLine} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
