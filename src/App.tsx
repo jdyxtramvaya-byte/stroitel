@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react'
+import type {CSSProperties} from 'react'
 import {Building2,Plus,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
@@ -46,7 +47,7 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  return <div className="app"><header className="topbar detail"><button className="back" onClick={onBack}><ArrowLeft/></button><div><div className="eyebrow">ОБЪЕКТ</div><h1>{project.name}</h1></div><button className="more" onClick={()=>{if(confirm('Удалить объект?'))onDelete()}}><Trash2/></button></header>
  <main className="content"><div className="project-info">{project.address&&<span><MapPin size={16}/>{project.address}</span>}{project.client&&<span><UserRound size={16}/>{project.client}</span>}</div>
  <div className="stats"><div><b>{floor.toFixed(1)}</b><span>м² пола</span></div><div><b>{wall.toFixed(1)}</b><span>м² стен</span></div><div><b>{project.rooms.length}</b><span>помещений</span></div></div>
- <div className="section-title"><h2>Разделы</h2></div><div className="modules">{modules.map(([name,Icon,bg])=><button className={`module ${active===name?'active':''}`} key={name} onClick={()=>setActive(name)} style={{'--bg':bg} as React.CSSProperties}><Icon/><b>{name}</b><ChevronRight/></button>)}</div>
+ <div className="section-title"><h2>Разделы</h2></div><div className="modules">{modules.map(([name,Icon,bg])=><button className={`module ${active===name?'active':''}`} key={name} onClick={()=>setActive(name)} style={{'--bg':bg} as CSSProperties}><Icon/><b>{name}</b><ChevronRight/></button>)}</div>
  {active==='Замеры'&&<Measurements project={project} onAdd={()=>setRoomModal(true)}/>}
  {active==='Материалы'&&<Materials project={project} onUpdate={patch}/>}
  {active==='Смета'&&<Estimate project={project}/>}
@@ -70,7 +71,7 @@ function Materials({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Proje
 
 function Estimate({project}:{project:Project}){
  const materials=project.materials.reduce((s,m)=>s+m.qty*m.price,0), rooms=project.rooms.length, areaTotal=project.rooms.reduce((s,r)=>s+area(r),0)
- return <><div className="section-title"><h2>Смета</h2><CircleDollarSign/></div><div className="estimate-card"><div><span>Материалы</span><b>{money(materials)}</b></div><div><span>Площадь пола</span><b>{areaTotal.toFixed(1)} м²</b></div><div><span>Помещения</span><b>{rooms}</b></div><div className="estimate-total"><span>Итого по материалам</span><b>{money(materials)}</b></div></div><div className="info-box">💡 Сейчас смета считает стоимость материалов. Следующим этапом добавим работы, нормы расхода и прибыль.</div></>
+ return <><div className="section-title"><h2>Смета</h2><CircleDollarSign/></div><div className="estimate-card"><div><span>Материалы</span><b>{money(materials)}</b></div><div><span>Площадь пола</span><b>{areaTotal.toFixed(1)} м²</b></div><div><span>Помещения</span><b>{rooms}</b></div><div className="estimate-total"><span>Итого по материалам</span><b>{money(materials)}</b></div></div><div className="info-box">Сейчас смета считает стоимость материалов. Следующим этапом добавим работы, нормы расхода и прибыль.</div></>
 }
 
 function Purchases({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
