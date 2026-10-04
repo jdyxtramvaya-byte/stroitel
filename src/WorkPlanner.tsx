@@ -104,7 +104,8 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   const selected=productOptions.find(x=>x.id===productId)??productOptions[0]
   if(!name||roomIds.length===0||!selected)return
   const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,productId:selected.id,product:selected}
-  const nextWorks=[...works,work]\n  onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
+  const nextWorks=[...works,work]
+  onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
  }
 
  const toggleRoom=(id:string)=>setRoomIds(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])
