@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react'
 import type {CSSProperties} from 'react'
-import {Building2,Plus,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone} from 'lucide-react'
+import {Building2,Plus,MapPin,UserRound,Ruler,Boxes,Calculator,ShoppingCart,BookOpen,AlertTriangle,ArrowLeft,Trash2,Home,ChevronRight,Check,CircleDollarSign,CalendarDays,X,Smartphone,PenLine} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean}
@@ -39,7 +39,7 @@ function HomeView({projects,onOpen,onAdd}:{projects:Project[],onOpen:(id:string)
 }
 
 function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:()=>void,onUpdate:(p:Project)=>void,onDelete:()=>void}){
- const [active,setActive]=useState<ModuleName>('Замеры'),[roomModal,setRoomModal]=useState(false)
+ const [active,setActive]=useState<ModuleName>('Замеры'),[roomModal,setRoomModal]=useState(false),[editingRoom,setEditingRoom]=useState<Room|null>(null)
  const floor=useMemo(()=>project.rooms.reduce((s,r)=>s+area(r),0),[project.rooms])
  const wall=useMemo(()=>project.rooms.reduce((s,r)=>s+walls(r),0),[project.rooms])
  const modules:[ModuleName,typeof Ruler,string][]=[['Замеры',Ruler,'#e9f2ff'],['Материалы',Boxes,'#edf8f0'],['Смета',Calculator,'#fff4df'],['Закупки',ShoppingCart,'#f4ecff'],['Дневник',BookOpen,'#fff0f0'],['Проблемы',AlertTriangle,'#fff7d8']]
@@ -54,11 +54,17 @@ function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:
  {active==='Закупки'&&<Purchases project={project} onUpdate={patch}/>}
  {active==='Дневник'&&<Diary project={project} onUpdate={patch}/>}
  {active==='Проблемы'&&<Problems project={project} onUpdate={patch}/>}
-  </main>{roomModal&&<RoomModal onClose={()=>setRoomModal(false)} onSave={r=>{patch({rooms:[...project.rooms,{...r,id:uid()}]});setRoomModal(false)}}/>}</div>
+  </main>{roomModal&&<RoomModal room={editingRoom} onClose={()=>{setRoomModal(false);setEditingRoom(null)}} onSave={r=>{patch({rooms:editingRoom?project.rooms.map(x=>x.id===editingRoom.id?{...r,id:x.id}:x):[...project.rooms,{...r,id:uid()}]});setRoomModal(false);setEditingRoom(null)}}/>}</div>
 }
 
-function Measurements({project,onAdd}:{project:Project,onAdd:()=>void}){
- return <><div className="section-title"><h2>Помещения</h2><button className="link" onClick={onAdd}>＋ Добавить</button></div>{project.rooms.length===0?<div className="empty compact"><Ruler size={30}/><b>Добавь первое помещение</b><p>Длина, ширина и высота — площади посчитаются автоматически.</p></div>:<div className="rooms">{project.rooms.map(r=><div className="room" key={r.id}><div><b>{r.name}</b><span>{r.length} × {r.width} × {r.height} м · стены {walls(r).toFixed(1)} м²</span></div><strong>{area(r).toFixed(1)} м²</strong></div>)}</div>}</>
+function Measurements({project,onAdd,onEdit,onDelete}:{project:Project,onAdd:()=>void,onEdit:(room:Room)=>void,onDelete:(id:string)=>void}){
+ const floor=project.rooms.reduce((s,r)=>s+area(r),0)
+ const wall=project.rooms.reduce((s,r)=>s+walls(r),0)
+ const volume=project.rooms.reduce((s,r)=>s+r.length*r.width*r.height,0)
+ return <><div className="section-title"><h2>Помещения</h2><button className="link" onClick={onAdd}>＋ Добавить</button></div>
+ {project.rooms.length===0?<div className="empty compact"><Ruler size={30}/><b>Добавь первое помещение</b><p>Длина, ширина и высота — площади посчитаются автоматически.</p><button className="primary" onClick={onAdd}>Добавить помещение</button></div>:<>
+ <div className="measurement-summary"><div><span>Пол</span><b>{floor.toFixed(1)} м²</b></div><div><span>Стены</span><b>{wall.toFixed(1)} м²</b></div><div><span>Объём</span><b>{volume.toFixed(1)} м³</b></div></div>
+ <div className="rooms">{project.rooms.map(r=><div className="room" key={r.id}><div className="room-main"><b>{r.name}</b><span>{r.length} × {r.width} × {r.height} м</span><small>Пол {area(r).toFixed(1)} м² · стены {walls(r).toFixed(1)} м² · объём {(r.length*r.width*r.height).toFixed(1)} м³</small></div><div className="room-side"><strong>{area(r).toFixed(1)} м²</strong><div className="room-actions"><button className="icon-btn" aria-label="Изменить помещение" onClick={()=>onEdit(r)}><PenLine size={15}/></button><button className="icon-btn danger" aria-label="Удалить помещение" onClick={()=>onDelete(r.id)}><Trash2 size={15}/></button></div></div></div>)}</div></>}</>
 }
 
 function Materials({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Project>)=>void}){
@@ -93,6 +99,15 @@ function Problems({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Projec
  return <><div className="section-title"><h2>Проблемы</h2><span>{project.issues.filter(i=>i.status==='open').length} открыто</span></div><div className="form-card"><label>Проблема<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Не хватает материала"/></label><div className="priority"><button className={priority==='low'?'selected':''} onClick={()=>setPriority('low')}>Низкий</button><button className={priority==='medium'?'selected':''} onClick={()=>setPriority('medium')}>Средний</button><button className={priority==='high'?'selected':''} onClick={()=>setPriority('high')}>Высокий</button></div><button className="primary wide" onClick={add} disabled={!title.trim()}>Добавить проблему</button></div><div className="issue-list">{project.issues.map(i=><button className={`issue ${i.status==='done'?'done':''}`} key={i.id} onClick={()=>toggle(i.id)}><span className={`priority-dot ${i.priority}`}></span><div><b>{i.title}</b><small>{i.status==='done'?'Решено':'Открыта'} · {i.priority==='high'?'Высокий':i.priority==='medium'?'Средний':'Низкий'} приоритет</small></div><Check size={18}/></button>)}</div></>
 }
 
-function RoomModal({onClose,onSave}:{onClose:()=>void,onSave:(r:Omit<Room,'id'>)=>void}){const [name,setName]=useState(''),[length,setLength]=useState(''),[width,setWidth]=useState(''),[height,setHeight]=useState('2.7'),ok=!!name.trim()&&+length>0&&+width>0&&+height>0;return <div className="overlay"><div className="modal"><div className="modal-head"><h2>Новое помещение</h2><button className="close" onClick={onClose}>×</button></div><label>Название<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="Например, Кухня"/></label><div className="grid3"><label>Длина, м<input inputMode="decimal" value={length} onChange={e=>setLength(e.target.value)} placeholder="5"/></label><label>Ширина, м<input inputMode="decimal" value={width} onChange={e=>setWidth(e.target.value)} placeholder="4"/></label><label>Высота, м<input inputMode="decimal" value={height} onChange={e=>setHeight(e.target.value)}/></label></div><div className="calc-preview">Площадь пола: <b>{(+length||0)*(+width||0)?((+length||0)*(+width||0)).toFixed(1):'0.0'} м²</b></div><div className="actions"><button className="secondary" onClick={onClose}>Отмена</button><button className="primary" disabled={!ok} onClick={()=>onSave({name:name.trim(),length:+length,width:+width,height:+height})}>Сохранить</button></div></div></div>}
+function RoomModal({room,onClose,onSave}:{room:Room|null,onClose:()=>void,onSave:(r:Omit<Room,'id'>)=>void}){
+ const [name,setName]=useState(room?.name??''),[length,setLength]=useState(room?.length?String(room.length):''),[width,setWidth]=useState(room?.width?String(room.width):''),[height,setHeight]=useState(room?.height?String(room.height):'2.7')
+ const ok=!!name.trim()&&+length>0&&+width>0&&+height>0
+ const floor=(+length||0)*(+width||0),wall=2*((+length||0)+(+width||0))*(+height||0),volume=floor*(+height||0)
+ return <div className="overlay"><div className="modal"><div className="modal-head"><h2>{room?'Изменить помещение':'Новое помещение'}</h2><button className="close" onClick={onClose}>×</button></div>
+ <label>Название<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="Например, Кухня"/></label>
+ <div className="grid3"><label>Длина, м<input inputMode="decimal" value={length} onChange={e=>setLength(e.target.value)} placeholder="5"/></label><label>Ширина, м<input inputMode="decimal" value={width} onChange={e=>setWidth(e.target.value)} placeholder="4"/></label><label>Высота, м<input inputMode="decimal" value={height} onChange={e=>setHeight(e.target.value)}/></label></div>
+ <div className="calc-preview"><div>Пол <b>{floor.toFixed(1)} м²</b></div><div>Стены <b>{wall.toFixed(1)} м²</b></div><div>Объём <b>{volume.toFixed(1)} м³</b></div></div>
+ <div className="actions"><button className="secondary" onClick={onClose}>Отмена</button><button className="primary" disabled={!ok} onClick={()=>onSave({name:name.trim(),length:+length,width:+width,height:+height})}>{room?'Сохранить изменения':'Сохранить'}</button></div></div></div>
+}
 
 function ProjectModal({onClose,onSave}:{onClose:()=>void,onSave:(p:Omit<Project,'id'|'rooms'|'materials'|'diary'|'issues'|'createdAt'>)=>void}){const [name,setName]=useState(''),[address,setAddress]=useState(''),[client,setClient]=useState('');return <div className="overlay"><div className="modal"><div className="modal-head"><h2>Новый объект</h2><button className="close" onClick={onClose}>×</button></div><label>Название объекта<input autoFocus value={name} onChange={e=>setName(e.target.value)} placeholder="Дом Иванова"/></label><label>Адрес<input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Город, улица"/></label><label>Заказчик<input value={client} onChange={e=>setClient(e.target.value)} placeholder="Имя заказчика"/></label><div className="actions"><button className="secondary" onClick={onClose}>Отмена</button><button className="primary" disabled={!name.trim()} onClick={()=>onSave({name:name.trim(),address,client})}>Создать</button></div></div></div>}
