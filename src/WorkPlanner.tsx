@@ -3,7 +3,7 @@ import {useMemo,useState} from 'react'
 import {Check,Trash2,Wrench,Package,Plus} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
-type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,laborPrice?:number,productId?:string,product?:Product,quantity?:number,unit?:string}
+type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,laborPrice?:number,productId?:string,product?:Product,quantity?:number,unit?:string,roofSlope?:number,roofRidge?:number,roofValley?:number,roofEave?:number,roofGable?:number,roofAbutment?:number,roofWindows?:number,roofPenetrations?:number,rafterLength?:number,rafterSpacing?:number,rafterCount?:number,timberSection?:string}
 type Product={id:string,name:string,brand:string,unit:string,packSize:number,packUnit:string,consumption:number,consumptionUnit:string}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type Project={rooms:Room[],materials:Material[],works?:Work[]}
@@ -253,6 +253,18 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const [quantity,setQuantity]=useState('')
  const [unit,setUnit]=useState('м²')
  const [productId,setProductId]=useState('')
+ const [roofSlope,setRoofSlope]=useState('30')
+ const [roofRidge,setRoofRidge]=useState('')
+ const [roofValley,setRoofValley]=useState('')
+ const [roofEave,setRoofEave]=useState('')
+ const [roofGable,setRoofGable]=useState('')
+ const [roofAbutment,setRoofAbutment]=useState('')
+ const [roofWindows,setRoofWindows]=useState('0')
+ const [roofPenetrations,setRoofPenetrations]=useState('0')
+ const [rafterLength,setRafterLength]=useState('')
+ const [rafterSpacing,setRafterSpacing]=useState('0.6')
+ const [rafterCount,setRafterCount]=useState('')
+ const [timberSection,setTimberSection]=useState('50×200')
  const productOptions=products[name]??[]
  const product=productOptions.find(x=>x.id===productId)??productOptions[0]
  const selectedPreset=presets.find(p=>p.name===name)
