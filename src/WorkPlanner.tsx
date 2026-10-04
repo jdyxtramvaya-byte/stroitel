@@ -112,8 +112,8 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
 
  const add=()=>{
   const selected=productOptions.find(x=>x.id===productId)??productOptions[0]
-  if(!name||roomIds.length===0||!selected)return
-  const work={id:crypto.randomUUID(),name,roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected.id,product:selected}
+  if(!name.trim()||roomIds.length===0)return
+  const work={id:crypto.randomUUID(),name:name.trim(),roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected?.id,product:selected}
   const nextWorks=[...works,work]
   onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
  }
@@ -125,8 +125,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   {project.rooms.length===0?<div className="empty compact"><b>Сначала добавь помещение</b><p>После замеров здесь можно назначать работы.</p></div>:<>
    <details className="work-add-details"><summary><Plus size={16}/> Добавить работу</summary><div className="form-card">
     <label>Категория<select value={presets.find(p=>p.name===name)?.category||''} onChange={e=>{const first=presets.find(p=>p.category===e.target.value);if(first){setName(first.name);setProductId('')}}}>{[...new Set(presets.map(p=>p.category))].map(x=><option key={x}>{x}</option>)}</select></label><label>Работа<select value={name} onChange={e=>{setName(e.target.value);setProductId('')}}>{presets.filter(p=>p.category===(presets.find(x=>x.name===name)?.category||presets[0].category)).map(p=><option key={p.name}>{p.name}</option>)}</select></label>
-    <label>Конкретный материал<select value={productId||product?.id||''} onChange={e=>setProductId(e.target.value)}>{productOptions.map(p=><option key={p.id} value={p.id}>{p.brand} · {p.name} · {p.packSize} {p.unit}/{p.packUnit}</option>)}</select></label>
-    {product&&<div className="info-box">Норма расхода: {product.consumption} {product.consumptionUnit}</div>}
+    {productOptions.length>0&&<><label>Конкретный материал<select value={productId||product?.id||''} onChange={e=>setProductId(e.target.value)}>{productOptions.map(p=><option key={p.id} value={p.id}>{p.brand} · {p.name} · {p.packSize} {p.unit}/{p.packUnit}</option>)}</select></label>{product&&<div className="info-box">Норма расхода: {product.consumption} {product.consumptionUnit}</div>}</>}
     <label>Помещения</label>
     <div className="room-picker">{project.rooms.map(r=><button type="button" className={roomIds.includes(r.id)?'selected':''} key={r.id} onClick={()=>toggleRoom(r.id)}><span>{roomIds.includes(r.id)&&<Check size={14}/>}</span>{r.name}</button>)}</div>
     <div className="grid3"><label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label><label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label><label>Запас, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label></div>
