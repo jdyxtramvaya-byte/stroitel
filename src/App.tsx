@@ -160,7 +160,7 @@ function Estimate({project,onUpdate}:{project:Project,onUpdate:(x:Partial<Projec
  const areaTotal=project.rooms.reduce((s,r)=>s+area(r),0)
  const open=works.filter(w=>!w.done).length
  const saveMargin=()=>onUpdate({profitPercent:pct})
- const estimateText=()=>{const lines=works.map(w=>'• '+w.name+' — '+money(Number(w.laborPrice)||0)).join('\\n');return 'Смета: '+project.name+'\\nЗаказчик: '+(project.client||'—')+'\\n\\nМатериалы: '+money(materials)+'\\nРаботы: '+money(labor)+'\\nСебестоимость: '+money(direct)+'\\nПрибыль ('+pct+'%): '+money(profit)+'\\nИТОГО: '+money(total)+(lines?'\\n\\nРаботы:\\n'+lines:'')}
+ const estimateText=()=>{const lines=works.map(w=>'• '+w.name+' — '+money(Number(w.laborPrice)||0)).join('\n');return 'Смета: '+project.name+'\nЗаказчик: '+(project.client||'—')+'\n\nМатериалы: '+money(materials)+'\nРаботы: '+money(labor)+'\nСебестоимость: '+money(direct)+'\nПрибыль ('+pct+'%): '+money(profit)+'\nИТОГО: '+money(total)+(lines?'\n\nРаботы:\n'+lines:'')}
  const shareEstimate=async()=>{const text=estimateText();if(navigator.share){try{await navigator.share({title:'Смета — '+project.name,text})}catch{}}else{await navigator.clipboard?.writeText(text);alert('Смета скопирована в буфер обмена.')}}
  const printEstimate=()=>window.print()
  return <section className="compact-module"><div className="module-hero"><div><span className="section-kicker">ФИНАНСЫ</span><h2>Смета</h2><p>{works.length} работ · {project.materials.length} материалов · расчёт цены объекта.</p></div><CircleDollarSign size={22}/></div>
