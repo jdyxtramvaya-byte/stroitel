@@ -3,7 +3,7 @@ import {useMemo,useState} from 'react'
 import {Check,Trash2,Wrench,Package,Plus} from 'lucide-react'
 
 type Room={id:string,name:string,length:number,width:number,height:number}
-type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,laborPrice?:number,productId?:string,product?:Product,quantity?:number,unit?:string,roofSlope?:number,roofRidge?:number,roofValley?:number,roofEave?:number,roofGable?:number,roofAbutment?:number,roofWindows?:number,roofPenetrations?:number,rafterLength?:number,rafterSpacing?:number,rafterCount?:number,timberSection?:string}
+type Work={id:string,name:string,roomIds:string[],thickness:number,coats:number,reserve:number,done:boolean,laborPrice?:number,productId?:string,product?:Product,quantity?:number,unit?:string,roofType?:'gable'|'hip'|'shed',roofSlope?:number,roofRidge?:number,roofValley?:number,roofEave?:number,roofGable?:number,roofAbutment?:number,roofWindows?:number,roofPenetrations?:number,rafterLength?:number,rafterSpacing?:number,rafterCount?:number,timberSection?:string}
 type Product={id:string,name:string,brand:string,unit:string,packSize:number,packUnit:string,consumption:number,consumptionUnit:string}
 type Material={id:string,name:string,unit:string,qty:number,price:number,bought:boolean,packageSize?:number,packageUnit?:string,packages?:number}
 type Project={rooms:Room[],materials:Material[],works?:Work[]}
@@ -56,7 +56,13 @@ const calc=(work:Work,rooms:Room)=>{
  if(work.name==='Разводка водоснабжения')return [{name:'Труба водоснабжения',unit:'м',qty:floor*0.5*reserve}]
  if(work.name==='Монтаж канализации')return [{name:'Канализационная труба',unit:'м',qty:floor*0.2*reserve}]
  if(work.name==='Монтаж металлочерепицы')return [{name:'Металлочерепица',unit:'м²',qty:(work.quantity||floor)*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.quantity||floor)*8*reserve},{name:'Планка кровельная',unit:'м',qty:((work.roofRidge||0)+(work.roofEave||0)+(work.roofGable||0)+(work.roofAbutment||0))*1.05*reserve}]
- if(/стропил/.test(work.name.toLowerCase())){const count=work.rafterCount||((work.roofEave||0)>0&&work.rafterSpacing?(work.roofEave/work.rafterSpacing)+1:0);return [{name:'Доска строительная',unit:'м',qty:count*(work.rafterLength||0)*reserve},{name:'Крепёж строительный',unit:'кг',qty:count*0.18*reserve},{name:'Деревозащитная пропитка',unit:'л',qty:count*(work.rafterLength||0)*0.08*reserve}]}
+ if(/стропил/.test(work.name.toLowerCase())){const count=work.rafterCount||((work.roofEave||0)>0&&work.rafterSpacing?Math.ceil(work.roofEave/work.rafterSpacing)+1:0);return [{name:'Доска строительная',unit:'м',qty:count*(work.rafterLength||0)*reserve},{name:'Крепёж строительный',unit:'кг',qty:count*0.18*reserve},{name:'Деревозащитная пропитка',unit:'л',qty:count*(work.rafterLength||0)*0.08*reserve}]}
+ if(/контробреш[её]тк/.test(work.name.toLowerCase()))return [{name:'Брусок контробрешётки',unit:'м',qty:(work.quantity||floor)*2*reserve}]
+ if(/утеплен.*кров/.test(work.name.toLowerCase()))return [{name:'Утеплитель для кровли',unit:'м²',qty:(work.quantity||floor)*1.08*reserve}]
+ if(/гидроизоляц|пароизоляц|мембран/.test(work.name.toLowerCase()))return [{name:'Кровельная мембрана',unit:'м²',qty:(work.quantity||floor)*1.1*reserve},{name:'Лента для проклейки',unit:'м',qty:(work.quantity||floor)*0.35*reserve}]
+ if(/водосточ/.test(work.name.toLowerCase()))return [{name:'Водосточная система',unit:'м',qty:(work.roofEave||work.quantity||floor)*1.05*reserve},{name:'Крепёж водосточный',unit:'шт.',qty:(work.roofEave||work.quantity||floor)*2*reserve}]
+ if(/снегозадерж/.test(work.name.toLowerCase()))return [{name:'Снегозадержатель',unit:'м',qty:(work.roofEave||work.quantity||floor)*1.05*reserve},{name:'Крепёж снегозадержателя',unit:'шт.',qty:(work.roofEave||work.quantity||floor)*2*reserve}]
+ if(/аэратор/.test(work.name.toLowerCase()))return [{name:'Кровельный аэратор',unit:'шт.',qty:(work.roofPenetrations||work.quantity||1)*reserve}]
  if(/мауэрлат/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:(work.roofEave||0)*1.05*reserve},{name:'Анкер',unit:'шт.',qty:Math.max(1,Math.ceil((work.roofEave||0)/1.5))}]
  if(/коньков.*балк/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:(work.roofRidge||0)*1.05*reserve},{name:'Крепёж строительный',unit:'кг',qty:(work.roofRidge||0)*0.12*reserve}]
  if(/обреш[её]тк/.test(work.name.toLowerCase()))return [{name:'Доска строительная',unit:'м',qty:(work.quantity||floor)*2.2*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.quantity||floor)*8*reserve}]
@@ -324,6 +330,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const [quantity,setQuantity]=useState('')
  const [unit,setUnit]=useState('м²')
  const [productId,setProductId]=useState('')
+ const [roofType,setRoofType]=useState<'gable'|'hip'|'shed'>('gable')
  const [roofSlope,setRoofSlope]=useState('30')
  const [roofRidge,setRoofRidge]=useState('')
  const [roofValley,setRoofValley]=useState('')
@@ -388,11 +395,15 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   const spacing=+rafterSpacing||0
   const eave=+roofEave||0
   const rafterCount=eave>0&&spacing>0?Math.ceil(eave/spacing)+1:0
-  const span=selected.length?Math.max(...selected.map(r=>r.width)):0
+  const room=selected[0]
+  const span=room?.width||0
+  const run=room?.length||0
   const halfSpan=span/2
-  const rafterLength=halfSpan>0&&slope>0&&slope<89?halfSpan/Math.cos(slope*Math.PI/180):0
-  return {planArea,roofArea,rafterCount,rafterLength}
- },[isRoof,project.rooms,roomIds,quantity,roofSlope,rafterSpacing,roofEave])
+  const cos=slope>0&&slope<89?Math.cos(slope*Math.PI/180):1
+  const rafterLength=roofType==='hip'&&run>0&&span>0&&slope>0&&slope<89?Math.sqrt((run/2)**2+(span/2)**2)/cos:roofType==='shed'&&span>0&&slope>0&&slope<89?span/cos:halfSpan>0&&slope>0&&slope<89?halfSpan/cos:0
+  const hipRidge=roofType==='hip'&&run>span&&slope>0?Math.max(0,run-span):0
+  return {planArea,roofArea,rafterCount,rafterLength,hipRidge}
+ },[isRoof,project.rooms,roomIds,quantity,roofType,roofSlope,rafterSpacing,roofEave])
  const needsReserve=isRoof||!['count','length'].includes(fieldMode)
 
  const totals=useMemo(()=>{
@@ -431,7 +442,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   if(!name.trim()||roomIds.length===0)return
   const manualQuantity=quantity?+quantity:undefined
   const autoQuantity=isRoof&&roofGeometry.roofArea>0?roofGeometry.roofArea:undefined
-  const work={id:crypto.randomUUID(),name:name.trim(),roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected?.id,product:selected,quantity:manualQuantity??autoQuantity,unit:unit||undefined,roofSlope:+roofSlope||undefined,roofRidge:+roofRidge||undefined,roofValley:+roofValley||undefined,roofEave:+roofEave||undefined,roofGable:+roofGable||undefined,roofAbutment:+roofAbutment||undefined,roofWindows:+roofWindows||0,roofPenetrations:+roofPenetrations||0,rafterLength:+rafterLength||roofGeometry.rafterLength||undefined,rafterSpacing:+rafterSpacing||undefined,rafterCount:+rafterCount||roofGeometry.rafterCount||undefined,timberSection:timberSection||undefined}
+  const work={id:crypto.randomUUID(),name:name.trim(),roomIds,roofType:isRoof?roofType:undefined,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected?.id,product:selected,quantity:manualQuantity??autoQuantity,unit:unit||undefined,roofSlope:+roofSlope||undefined,roofRidge:+roofRidge||undefined,roofValley:+roofValley||undefined,roofEave:+roofEave||undefined,roofGable:+roofGable||undefined,roofAbutment:+roofAbutment||undefined,roofWindows:+roofWindows||0,roofPenetrations:+roofPenetrations||0,rafterLength:+rafterLength||roofGeometry.rafterLength||undefined,rafterSpacing:+rafterSpacing||undefined,rafterCount:+rafterCount||roofGeometry.rafterCount||undefined,timberSection:timberSection||undefined}
   const nextWorks=[...works,work]
   onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
  }
@@ -453,7 +464,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     {fieldMode==='volume'&&<label>Объём, м³<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 12.5"/></label>}
     {fieldMode==='generic'&&<><label>Количество<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Введите объём"/></label><label>Ед. изм.<select value={unit} onChange={e=>setUnit(e.target.value)}><option>м²</option><option>м.п.</option><option>м³</option><option>шт.</option><option>компл.</option></select></label></>}
     {isRoof&&roofFields.includes('area')&&<label>Площадь кровли, м²<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 186"/></label>}
-    {isRoof&&roofFields.includes('slope')&&<label>Уклон кровли, °<input inputMode="decimal" value={roofSlope} onChange={e=>setRoofSlope(e.target.value)} placeholder="Например, 30"/></label>}
+    {isRoof&&roofFields.includes('slope')&&<><label>Тип кровли<select value={roofType} onChange={e=>setRoofType(e.target.value as 'gable'|'hip'|'shed')}><option value="gable">Двускатная</option><option value="hip">Четырёхскатная (вальмовая)</option><option value="shed">Односкатная</option></select></label><label>Уклон кровли, °<input inputMode="decimal" value={roofSlope} onChange={e=>setRoofSlope(e.target.value)} placeholder="Например, 30"/></label></>}
     {isRoof&&roofFields.includes('ridge')&&<label>Длина конька, м<input inputMode="decimal" value={roofRidge} onChange={e=>setRoofRidge(e.target.value)} placeholder="Например, 12"/></label>}
     {isRoof&&roofFields.includes('valley')&&<label>Длина ендов, м<input inputMode="decimal" value={roofValley} onChange={e=>setRoofValley(e.target.value)} placeholder="Например, 8"/></label>}
     {isRoof&&roofFields.includes('eave')&&<label>Длина свесов/карниза, м<input inputMode="decimal" value={roofEave} onChange={e=>setRoofEave(e.target.value)} placeholder="Например, 24"/></label>}
