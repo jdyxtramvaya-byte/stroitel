@@ -35,14 +35,26 @@ export default function App(){
 }
 
 function HomeView({projects,onOpen,onAdd}:{projects:Project[],onOpen:(id:string)=>void,onAdd:()=>void}){
- return <div className="app"><header className="topbar"><div><div className="eyebrow">СТРОИТЕЛЬ</div><h1>Мои объекты</h1></div><button className="round" onClick={onAdd}><Plus/></button></header>
- <main className="content"><section className="dashboard-hero"><div className="dashboard-copy"><span className="dashboard-label">РАБОЧИЙ СТОЛ</span><h2>Управляй объектами без лишней бумаги</h2><p>Замеры, работы, материалы и деньги собраны в одной системе.</p></div><button className="primary dashboard-add" onClick={onAdd}><Plus size={17}/> Новый объект</button></section>
- <div className="portfolio-stats"><div><b>{projects.length}</b><span>объектов</span></div><div><b>{projects.reduce((s,p)=>s+p.rooms.length,0)}</b><span>помещений</span></div><div><b>{projects.reduce((s,p)=>s+p.materials.length,0)}</b><span>позиций</span></div></div>
- <div className="section-title"><div><h2>Мои объекты</h2><small className="section-caption">Рабочие проекты</small></div><span>{projects.length}</span></div>
- {projects.length===0?<div className="empty"><Home size={34}/><b>Пока нет объектов</b><p>Создай первый объект и начни с замеров.</p></div>:<div className="cards">{projects.map(p=><button className="project-card" key={p.id} onClick={()=>onOpen(p.id)}><div className="project-icon"><Building2/></div><div className="card-main"><b>{p.name}</b><span>{p.address||'Адрес не указан'}</span><small>{p.rooms.length} помещений · {p.materials.length} материалов</small></div><ChevronRight/></button>)}</div>}</main>
- <div className="hint"><Smartphone size={16}/> <span>Можно установить приложение на главный экран телефона.</span></div></div>
+ const categories=[
+  ['Замеры',Ruler,'Площади и размеры'],
+  ['Работы',Wrench,'Планирование работ'],
+  ['Материалы',Boxes,'Материалы и расходы'],
+  ['Смета',Calculator,'Стоимость объекта'],
+  ['Закупки',ShoppingCart,'Что нужно купить'],
+  ['Дневник',BookOpen,'Заметки по объекту'],
+  ['Проблемы',AlertTriangle,'Важные вопросы'],
+  ['Объекты',Building2,'Все проекты']
+ ] as const
+ const openCategory=(name:string)=>name==='Объекты'?(projects[0]?onOpen(projects[0].id):onAdd()):(projects[0]?onOpen(projects[0].id):onAdd())
+ return <div className="app home-app"><header className="topbar"><div><div className="eyebrow">СТРОИТЕЛЬ</div><h1>Рабочий стол</h1></div><button className="round" onClick={onAdd}><Plus/></button></header>
+ <main className="content home-content">
+  <section className="ios-welcome"><div><span>СТРОИТЕЛЬ</span><h2>Инструменты<br/>в одном месте</h2><p>Выбери нужный раздел. Ничего лишнего на экране.</p></div><div className="ios-orb"><Building2 size={30}/></div></section>
+  <div className="category-grid">{categories.map(([name,Icon,desc])=><button key={name} className="category-tile" onClick={()=>openCategory(name)}><span className="category-icon"><Icon size={22}/></span><span className="category-text"><b>{name}</b><small>{desc}</small></span><ChevronRight size={16}/></button>)}</div>
+  <section className="home-projects"><div className="section-title"><div><h2>Последний объект</h2><small className="section-caption">{projects.length?'Быстрый доступ':'Создай объект, чтобы начать'}</small></div></div>
+   {projects.length?<button className="project-card" onClick={()=>onOpen(projects[0].id)}><div className="project-icon"><Building2/></div><div className="card-main"><b>{projects[0].name}</b><span>{projects[0].address||'Адрес не указан'}</span><small>{projects[0].rooms.length} помещений · {projects[0].materials.length} материалов</small></div><ChevronRight/></button>:<button className="empty home-empty" onClick={onAdd}><Plus size={25}/><b>Создать первый объект</b><span>После этого категории будут работать внутри него.</span></button>}
+  </section>
+ </main></div>
 }
-
 function ProjectView({project,onBack,onUpdate,onDelete}:{project:Project,onBack:()=>void,onUpdate:(p:Project)=>void,onDelete:()=>void}){
  const [active,setActive]=useState<ProjectTab>('Обзор'),[roomModal,setRoomModal]=useState(false),[editingRoom,setEditingRoom]=useState<Room|null>(null),[moreOpen,setMoreOpen]=useState(false)
  const floor=useMemo(()=>project.rooms.reduce((s,r)=>s+area(r),0),[project.rooms])
