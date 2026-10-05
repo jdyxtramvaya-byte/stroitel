@@ -379,6 +379,20 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   if(/поликарбонат|черепиц|металлочерепиц|профнастил|фальцев|ондулин|шифер|мягк.*кров/.test(n))return ['area','slope','ridge','valley','eave','gable','abutment','penetrations','reserve']
   return ['area','reserve']
  },[isRoof,n])
+ const roofGeometry=useMemo(()=>{
+  if(!isRoof)return {planArea:0,roofArea:0,rafterCount:0,rafterLength:0}
+  const selected=project.rooms.filter(r=>roomIds.includes(r.id))
+  const planArea=quantity&&+quantity>0?+quantity:selected.reduce((s,r)=>s+r.length*r.width,0)
+  const slope=+roofSlope||0
+  const roofArea=slope>0&&slope<89?planArea/Math.cos(slope*Math.PI/180):planArea
+  const spacing=+rafterSpacing||0
+  const eave=+roofEave||0
+  const rafterCount=eave>0&&spacing>0?Math.ceil(eave/spacing)+1:0
+  const span=selected.length?Math.max(...selected.map(r=>r.width)):0
+  const halfSpan=span/2
+  const rafterLength=halfSpan>0&&slope>0&&slope<89?halfSpan/Math.cos(slope*Math.PI/180):0
+  return {planArea,roofArea,rafterCount,rafterLength}
+ },[isRoof,project.rooms,roomIds,quantity,roofSlope,rafterSpacing,roofEave])
  const needsReserve=isRoof||!['count','length'].includes(fieldMode)
 
  const totals=useMemo(()=>{
@@ -415,7 +429,9 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
  const add=()=>{
   const selected=productOptions.find(x=>x.id===productId)??productOptions[0]
   if(!name.trim()||roomIds.length===0)return
-  const work={id:crypto.randomUUID(),name:name.trim(),roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected?.id,product:selected,quantity:quantity?+quantity:undefined,unit:unit||undefined,roofSlope:+roofSlope||undefined,roofRidge:+roofRidge||undefined,roofValley:+roofValley||undefined,roofEave:+roofEave||undefined,roofGable:+roofGable||undefined,roofAbutment:+roofAbutment||undefined,roofWindows:+roofWindows||0,roofPenetrations:+roofPenetrations||0,rafterLength:+rafterLength||undefined,rafterSpacing:+rafterSpacing||undefined,rafterCount:+rafterCount||undefined,timberSection:timberSection||undefined}
+  const manualQuantity=quantity?+quantity:undefined
+  const autoQuantity=isRoof&&roofGeometry.roofArea>0?roofGeometry.roofArea:undefined
+  const work={id:crypto.randomUUID(),name:name.trim(),roomIds,thickness:+thickness||10,coats:+coats||1,reserve:+reserve||0,done:false,laborPrice:+laborPrice||0,productId:selected?.id,product:selected,quantity:manualQuantity??autoQuantity,unit:unit||undefined,roofSlope:+roofSlope||undefined,roofRidge:+roofRidge||undefined,roofValley:+roofValley||undefined,roofEave:+roofEave||undefined,roofGable:+roofGable||undefined,roofAbutment:+roofAbutment||undefined,roofWindows:+roofWindows||0,roofPenetrations:+roofPenetrations||0,rafterLength:+rafterLength||roofGeometry.rafterLength||undefined,rafterSpacing:+rafterSpacing||undefined,rafterCount:+rafterCount||roofGeometry.rafterCount||undefined,timberSection:timberSection||undefined}
   const nextWorks=[...works,work]
   onUpdate({works:nextWorks,materials:materialsFor(nextWorks)})
  }
@@ -431,7 +447,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     <label>Помещения</label>
     <div className="room-picker">{project.rooms.map(r=><button type="button" className={roomIds.includes(r.id)?'selected':''} key={r.id} onClick={()=>toggleRoom(r.id)}><span>{roomIds.includes(r.id)&&<Check size={14}/>}</span>{r.name}</button>)}</div>
     <div className="grid3">
-    {fieldMode==='area'&&<label>{selectedPreset?.kind==='roof'?'Площадь кровли, м²':'Площадь работ, м²'}<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 186"/></label>}
+    {fieldMode==='area'&&!isRoof&&<label>Площадь работ, м²<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 186"/></label>}
     {fieldMode==='length'&&<label>Длина, м<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 35"/></label>}
     {fieldMode==='count'&&<label>Количество, шт.<input inputMode="numeric" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 8"/></label>}
     {fieldMode==='volume'&&<label>Объём, м³<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 12.5"/></label>}
@@ -450,6 +466,7 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     {isRoof&&roofFields.includes('rafterSpacing')&&<label>Шаг стропил, м<input inputMode="decimal" value={rafterSpacing} onChange={e=>setRafterSpacing(e.target.value)} placeholder="Например, 0.6"/></label>}
     {isRoof&&roofFields.includes('rafterCount')&&<label>Количество стропил, шт.<input inputMode="numeric" value={rafterCount} onChange={e=>setRafterCount(e.target.value)} placeholder="Рассчитается по шагу"/></label>}
     {isRoof&&roofFields.includes('timberSection')&&<label>Сечение древесины, мм<input value={timberSection} onChange={e=>setTimberSection(e.target.value)} placeholder="50×200"/></label>}
+    {isRoof&&roofGeometry.planArea>0&&<div className="info-box" style={{gridColumn:'1 / -1'}}><b>Расчётная геометрия:</b> плановая площадь {roofGeometry.planArea.toFixed(1)} м² · площадь скатов {roofGeometry.roofArea.toFixed(1)} м²{roofGeometry.rafterCount>0&&(' · стропил ориентировочно '+roofGeometry.rafterCount+' шт.')}{roofGeometry.rafterLength>0&&(' · длина стропилины ориентировочно '+roofGeometry.rafterLength.toFixed(2)+' м')}<br/><small>Расчёт площади учитывает уклон. Длина стропил — оценка для двускатной схемы; ручное значение имеет приоритет.</small></div>}
     {needsThickness&&<label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label>}
     {needsCoats&&<label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label>}
     {needsReserve&&<label>Запас материалов, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label>}
