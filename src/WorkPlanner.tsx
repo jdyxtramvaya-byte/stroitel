@@ -42,6 +42,26 @@ const calc=(work:Work,rooms:Room)=>{
  const floor=selected.reduce((s,r)=>s+r.length*r.width,0)
  const wall=selected.reduce((s,r)=>s+2*(r.length+r.width)*r.height,0)
  const reserve=1+work.reserve/100
+ const roofRooms=selected.length?selected:[]
+ const roofRoom=roofRooms[0]
+ const roofLength=roofRoom?.length||0
+ const roofWidth=roofRoom?.width||0
+ const roofSlope=work.roofSlope||0
+ const roofCos=roofSlope>0&&roofSlope<89?Math.cos(roofSlope*Math.PI/180):1
+ const roofPlan=work.quantity&&work.quantity>0?work.quantity:(roofLength*roofWidth)
+ const roofArea=work.quantity&&work.quantity>0?work.quantity/roofCos:(roofPlan/roofCos)
+ const roofEave=work.roofEave||roofLength*2
+ const roofGable=work.roofGable||roofWidth*2
+ const roofRidge=work.roofRidge||(work.roofType==='gable'?roofLength:work.roofType==='hip'?Math.max(0,roofLength-roofWidth):0)
+ const roofRafters=work.rafterCount||((roofEave>0&&(work.rafterSpacing||0)>0)?Math.ceil(roofEave/(work.rafterSpacing||1))+1:0)
+ const roofRafterLength=work.rafterLength||(
+   work.roofType==='shed'?roofWidth/roofCos:
+   work.roofType==='hip'&&roofLength&&roofWidth?Math.sqrt((roofLength/2)**2+(roofWidth/2)**2)/roofCos:
+   roofWidth>0?roofWidth/2/roofCos:0
+ )
+ const roofSlopeRun=roofRafterLength*roofRafters
+ const roofPerimeter=roofEave+roofGable
+ const roofGeometryQty=(factor:number)=>roofArea*factor*reserve
  if(work.name==='Стяжка пола')return [{name:work.product?.name||'Сухая смесь для стяжки',unit:work.product?.unit||'кг',qty:floor*(work.thickness/10)*(work.product?.consumption||20)*reserve}]
  if(work.name==='Штукатурка стен')return [{name:work.product?.name||'Штукатурная смесь',unit:work.product?.unit||'кг',qty:wall*work.thickness*(work.product?.consumption||0.9)*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.15*reserve}]
  if(work.name==='Шпаклёвка стен')return [{name:work.product?.name||'Шпаклёвка',unit:work.product?.unit||'кг',qty:wall*work.thickness*(work.product?.consumption||1)*reserve},{name:'Грунтовка',unit:'л',qty:wall*0.12*reserve}]
@@ -56,17 +76,17 @@ const calc=(work:Work,rooms:Room)=>{
  if(work.name==='Разводка водоснабжения')return [{name:'Труба водоснабжения',unit:'м',qty:floor*0.5*reserve}]
  if(work.name==='Монтаж канализации')return [{name:'Канализационная труба',unit:'м',qty:floor*0.2*reserve}]
  if(work.name==='Монтаж металлочерепицы')return [{name:'Металлочерепица',unit:'м²',qty:(work.quantity||floor)*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.quantity||floor)*8*reserve},{name:'Планка кровельная',unit:'м',qty:((work.roofRidge||0)+(work.roofEave||0)+(work.roofGable||0)+(work.roofAbutment||0))*1.05*reserve}]
- if(/стропил/.test(work.name.toLowerCase())){const count=work.rafterCount||((work.roofEave||0)>0&&work.rafterSpacing?Math.ceil(work.roofEave/work.rafterSpacing)+1:0);return [{name:'Доска строительная',unit:'м',qty:count*(work.rafterLength||0)*reserve},{name:'Крепёж строительный',unit:'кг',qty:count*0.18*reserve},{name:'Деревозащитная пропитка',unit:'л',qty:count*(work.rafterLength||0)*0.08*reserve}]}
- if(/контробреш[её]тк/.test(work.name.toLowerCase()))return [{name:'Брусок контробрешётки',unit:'м',qty:(work.quantity||floor)*2*reserve}]
- if(/утеплен.*кров/.test(work.name.toLowerCase()))return [{name:'Утеплитель для кровли',unit:'м²',qty:(work.quantity||floor)*1.08*reserve}]
- if(/гидроизоляц|пароизоляц|мембран/.test(work.name.toLowerCase()))return [{name:'Кровельная мембрана',unit:'м²',qty:(work.quantity||floor)*1.1*reserve},{name:'Лента для проклейки',unit:'м',qty:(work.quantity||floor)*0.35*reserve}]
- if(/водосточ/.test(work.name.toLowerCase()))return [{name:'Водосточная система',unit:'м',qty:(work.roofEave||work.quantity||floor)*1.05*reserve},{name:'Крепёж водосточный',unit:'шт.',qty:(work.roofEave||work.quantity||floor)*2*reserve}]
- if(/снегозадерж/.test(work.name.toLowerCase()))return [{name:'Снегозадержатель',unit:'м',qty:(work.roofEave||work.quantity||floor)*1.05*reserve},{name:'Крепёж снегозадержателя',unit:'шт.',qty:(work.roofEave||work.quantity||floor)*2*reserve}]
+ if(/стропил/.test(work.name.toLowerCase()))return [{name:'Доска строительная',unit:'м',qty:roofSlopeRun*reserve},{name:'Крепёж строительный',unit:'кг',qty:roofRafters*0.18*reserve},{name:'Деревозащитная пропитка',unit:'л',qty:roofSlopeRun*0.08*reserve}]
+ if(/контробреш[её]тк/.test(work.name.toLowerCase()))return [{name:'Брусок контробрешётки',unit:'м',qty:roofSlopeRun*reserve}]
+ if(/утеплен.*кров/.test(work.name.toLowerCase()))return [{name:'Утеплитель для кровли',unit:'м²',qty:roofGeometryQty(1.08)}]
+ if(/гидроизоляц|пароизоляц|мембран/.test(work.name.toLowerCase()))return [{name:'Кровельная мембрана',unit:'м²',qty:roofGeometryQty(1.1)},{name:'Лента для проклейки',unit:'м',qty:roofPerimeter*0.35*reserve}]
+ if(/водосточ/.test(work.name.toLowerCase()))return [{name:'Водосточная система',unit:'м',qty:roofEave*1.05*reserve},{name:'Крепёж водосточный',unit:'шт.',qty:roofEave*2*reserve}]
+ if(/снегозадерж/.test(work.name.toLowerCase()))return [{name:'Снегозадержатель',unit:'м',qty:roofEave*1.05*reserve},{name:'Крепёж снегозадержателя',unit:'шт.',qty:roofEave*2*reserve}]
  if(/аэратор/.test(work.name.toLowerCase()))return [{name:'Кровельный аэратор',unit:'шт.',qty:(work.roofPenetrations||work.quantity||1)*reserve}]
- if(/мауэрлат/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:(work.roofEave||0)*1.05*reserve},{name:'Анкер',unit:'шт.',qty:Math.max(1,Math.ceil((work.roofEave||0)/1.5))}]
- if(/коньков.*балк/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:(work.roofRidge||0)*1.05*reserve},{name:'Крепёж строительный',unit:'кг',qty:(work.roofRidge||0)*0.12*reserve}]
- if(/обреш[её]тк/.test(work.name.toLowerCase()))return [{name:'Доска строительная',unit:'м',qty:(work.quantity||floor)*2.2*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.quantity||floor)*8*reserve}]
- if(/ендов|примык|карнизн.*план|торцев.*план|кон[ьй]к.*кров|свес/.test(work.name.toLowerCase()))return [{name:'Планка кровельная',unit:'м',qty:(work.roofRidge||work.roofValley||work.roofEave||work.roofGable||work.roofAbutment||work.quantity||floor)*1.05*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.roofRidge||work.roofValley||work.roofEave||work.roofGable||work.roofAbutment||work.quantity||floor)*4*reserve}]
+ if(/мауэрлат/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:roofPerimeter*1.05*reserve},{name:'Анкер',unit:'шт.',qty:Math.max(1,Math.ceil(roofPerimeter/1.5))}]
+ if(/коньков.*балк/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:roofRidge*1.05*reserve},{name:'Крепёж строительный',unit:'кг',qty:roofRidge*0.12*reserve}]
+ if(/обреш[её]тк/.test(work.name.toLowerCase())){const rows=roofSlope>0?Math.max(1,Math.ceil(roofRafterLength/0.35)):0;return [{name:'Доска строительная',unit:'м',qty:roofRafters*rows*roofRafterLength*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:roofRafters*rows*4*reserve}]}
+ if(/ендов|примык|карнизн.*план|торцев.*план|кон[ьй]к.*кров|свес/.test(work.name.toLowerCase())){const base=work.roofRidge||work.roofValley||work.roofEave||work.roofGable||work.roofAbutment||roofPerimeter;return [{name:'Планка кровельная',unit:'м',qty:base*1.05*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:base*4*reserve}]}
  const q=work.quantity&&work.quantity>0?work.quantity:(/кров|стропил|обреш|утеплен.*кров|мембран/.test(work.name.toLowerCase())?floor:(/покраск|шпакл|штукатур|облицовк|фасад|гипсокартон|кладк/.test(work.name.toLowerCase())?wall:floor))
  const n=work.name.toLowerCase()
  if(/разработк.*грунт|котлован|транше/.test(n))return [{name:'Грунт обратной засыпки',unit:'м³',qty:q*reserve}]
