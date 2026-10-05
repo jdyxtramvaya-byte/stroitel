@@ -83,6 +83,7 @@ const calc=(work:Work,rooms:Room)=>{
  if(/водосточ/.test(work.name.toLowerCase()))return [{name:'Водосточная система',unit:'м',qty:roofEave*1.05*reserve},{name:'Крепёж водосточный',unit:'шт.',qty:roofEave*2*reserve}]
  if(/снегозадерж/.test(work.name.toLowerCase()))return [{name:'Снегозадержатель',unit:'м',qty:roofEave*1.05*reserve},{name:'Крепёж снегозадержателя',unit:'шт.',qty:roofEave*2*reserve}]
  if(/аэратор/.test(work.name.toLowerCase()))return [{name:'Кровельный аэратор',unit:'шт.',qty:(work.roofPenetrations||work.quantity||1)*reserve}]
+ if(/стойк.*подкос/.test(work.name.toLowerCase())){const count=Math.max(1,work.rafterCount||Math.ceil((roofLength||roofWidth)/2));return [{name:'Брус для стоек и подкосов',unit:'м',qty:count*2.5*reserve},{name:'Крепёж строительный',unit:'кг',qty:count*0.25*reserve}]}
  if(/мауэрлат/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:roofPerimeter*1.05*reserve},{name:'Анкер',unit:'шт.',qty:Math.max(1,Math.ceil(roofPerimeter/1.5))}]
  if(/коньков.*балк/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:roofRidge*1.05*reserve},{name:'Крепёж строительный',unit:'кг',qty:roofRidge*0.12*reserve}]
  if(/обреш[её]тк/.test(work.name.toLowerCase())){const rows=roofSlope>0?Math.max(1,Math.ceil(roofRafterLength/0.35)):0;return [{name:'Доска строительная',unit:'м',qty:roofRafters*rows*roofRafterLength*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:roofRafters*rows*4*reserve}]}
@@ -104,6 +105,9 @@ const calc=(work:Work,rooms:Room)=>{
  if(/деревянн.*каркас|стропил|мауэрлат|коньков.*балк|стойк.*подкос|обреш[её]тк|балочн.*систем/.test(n))return [{name:'Доска строительная',unit:'м³',qty:q*0.06*reserve},{name:'Брус',unit:'м³',qty:q*0.03*reserve},{name:'Крепёж строительный',unit:'кг',qty:q*0.15*reserve},{name:'Деревозащитная пропитка',unit:'л',qty:q*0.15*reserve}]
  if(/osb|сплошн.*основан/.test(n))return [{name:'OSB-3',unit:'м²',qty:q*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:q*15*reserve}]
  if(/подкладочн.*ковер/.test(n))return [{name:'Подкладочный ковёр',unit:'м²',qty:q*1.1*reserve}]
+ if(/металлочерепиц/.test(n))return [{name:'Металлочерепица',unit:'м²',qty:roofGeometryQty(1.1)},{name:'Крепёж кровельный',unit:'шт.',qty:roofArea*8*reserve}]
+ if(/фальцев/.test(n))return [{name:'Фальцевая кровля',unit:'м²',qty:roofGeometryQty(1.1)},{name:'Кляммер',unit:'шт.',qty:roofArea*4*reserve}]
+ if(/осб|сплошн.*основан/.test(n))return [{name:'OSB-3',unit:'м²',qty:roofGeometryQty(1.1)},{name:'Крепёж кровельный',unit:'шт.',qty:roofArea*15*reserve}]
  if(/гибк.*черепиц/.test(n))return [{name:'Гибкая черепица',unit:'м²',qty:q*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:q*8*reserve}]
  if(/композитн.*черепиц/.test(n))return [{name:'Композитная черепица',unit:'м²',qty:q*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:q*8*reserve}]
  if(/керамическ.*черепиц/.test(n))return [{name:'Керамическая черепица',unit:'м²',qty:q*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:q*5*reserve}]
