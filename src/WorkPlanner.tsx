@@ -351,9 +351,35 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
   if(/бетон|фундамент|котлован|транше|грунт|засыпк|опалуб|арматур|монолит|сборн.*плит/.test(n))return 'volume'
   return 'generic'
  },[name,selectedPreset?.kind])
+ const n=name.toLowerCase()
  const needsThickness=['Стяжка пола','Штукатурка стен','Шпаклёвка стен','Кладка газоблока','Кладка пеноблока','Кладка кирпича','Кладка камня','Утепление фасада','Теплоизоляция стен','Утепление кровли','Устройство ленточного фундамента','Устройство плитного фундамента'].includes(name)
- const needsCoats=/покраск|грунтовк|оклейк/.test(name.toLowerCase())
- const needsReserve=!['count','length'].includes(fieldMode)
+ const needsCoats=/покраск|грунтовк|оклейк/.test(n)
+ const isRoof=selectedPreset?.kind==='roof'
+ const roofFields=useMemo(()=>{
+  if(!isRoof)return [] as string[]
+  if(/наслонн.*стропил|висяч.*стропил|стропильн.*систем/.test(n))return ['area','slope','rafterLength','rafterSpacing','rafterCount','timberSection','reserve']
+  if(/балочн.*систем/.test(n))return ['area','timberSection','reserve']
+  if(/мауэрлат/.test(n))return ['area','eave','timberSection','reserve']
+  if(/коньков.*балк/.test(n))return ['area','ridge','timberSection','reserve']
+  if(/стойк.*подкос/.test(n))return ['area','rafterCount','timberSection','reserve']
+  if(/обреш[её]тк|контробреш[её]тк/.test(n))return ['area','slope','reserve']
+  if(/сплошн.*основан|osb/.test(n))return ['area','reserve']
+  if(/подкладочн.*ковер/.test(n))return ['area','reserve']
+  if(/ендов/.test(n))return ['valley','reserve']
+  if(/свес/.test(n))return ['eave','reserve']
+  if(/карнизн.*план/.test(n))return ['eave','reserve']
+  if(/торцев.*план/.test(n))return ['gable','reserve']
+  if(/планк.*примык/.test(n))return ['abutment','reserve']
+  if(/мансардн.*окн/.test(n))return ['windows','reserve']
+  if(/аэратор/.test(n))return ['count','reserve']
+  if(/водосточ/.test(n))return ['eave','reserve']
+  if(/снегозадерж/.test(n))return ['eave','reserve']
+  if(/гидроизоляц|пароизоляц|мембран/.test(n))return ['area','penetrations','reserve']
+  if(/теплоизоляц/.test(n))return ['area','thickness','reserve']
+  if(/поликарбонат|черепиц|металлочерепиц|профнастил|фальцев|ондулин|шифер|мягк.*кров/.test(n))return ['area','slope','ridge','valley','eave','gable','abutment','penetrations','reserve']
+  return ['area','reserve']
+ },[isRoof,n])
+ const needsReserve=isRoof||!['count','length'].includes(fieldMode)
 
  const totals=useMemo(()=>{
   const map=new Map<string,{unit:string,qty:number}>()
@@ -410,6 +436,20 @@ export default function WorkPlanner({project,onUpdate}:{project:Project,onUpdate
     {fieldMode==='count'&&<label>Количество, шт.<input inputMode="numeric" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 8"/></label>}
     {fieldMode==='volume'&&<label>Объём, м³<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 12.5"/></label>}
     {fieldMode==='generic'&&<><label>Количество<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Введите объём"/></label><label>Ед. изм.<select value={unit} onChange={e=>setUnit(e.target.value)}><option>м²</option><option>м.п.</option><option>м³</option><option>шт.</option><option>компл.</option></select></label></>}
+    {isRoof&&roofFields.includes('area')&&<label>Площадь кровли, м²<input inputMode="decimal" value={quantity} onChange={e=>setQuantity(e.target.value)} placeholder="Например, 186"/></label>}
+    {isRoof&&roofFields.includes('slope')&&<label>Уклон кровли, °<input inputMode="decimal" value={roofSlope} onChange={e=>setRoofSlope(e.target.value)} placeholder="Например, 30"/></label>}
+    {isRoof&&roofFields.includes('ridge')&&<label>Длина конька, м<input inputMode="decimal" value={roofRidge} onChange={e=>setRoofRidge(e.target.value)} placeholder="Например, 12"/></label>}
+    {isRoof&&roofFields.includes('valley')&&<label>Длина ендов, м<input inputMode="decimal" value={roofValley} onChange={e=>setRoofValley(e.target.value)} placeholder="Например, 8"/></label>}
+    {isRoof&&roofFields.includes('eave')&&<label>Длина свесов/карниза, м<input inputMode="decimal" value={roofEave} onChange={e=>setRoofEave(e.target.value)} placeholder="Например, 24"/></label>}
+    {isRoof&&roofFields.includes('gable')&&<label>Длина фронтонов, м<input inputMode="decimal" value={roofGable} onChange={e=>setRoofGable(e.target.value)} placeholder="Например, 18"/></label>}
+    {isRoof&&roofFields.includes('abutment')&&<label>Длина примыканий, м<input inputMode="decimal" value={roofAbutment} onChange={e=>setRoofAbutment(e.target.value)} placeholder="Например, 6"/></label>}
+    {isRoof&&roofFields.includes('windows')&&<label>Мансардных окон, шт.<input inputMode="numeric" value={roofWindows} onChange={e=>setRoofWindows(e.target.value)} placeholder="Например, 2"/></label>}
+    {isRoof&&roofFields.includes('count')&&<label>Аэраторов, шт.<input inputMode="numeric" value={roofPenetrations} onChange={e=>setRoofPenetrations(e.target.value)} placeholder="Например, 4"/></label>}
+    {isRoof&&roofFields.includes('penetrations')&&<label>Проходок/примыканий, шт.<input inputMode="numeric" value={roofPenetrations} onChange={e=>setRoofPenetrations(e.target.value)} placeholder="Например, 3"/></label>}
+    {isRoof&&roofFields.includes('rafterLength')&&<label>Длина стропил, м<input inputMode="decimal" value={rafterLength} onChange={e=>setRafterLength(e.target.value)} placeholder="Например, 5.8"/></label>}
+    {isRoof&&roofFields.includes('rafterSpacing')&&<label>Шаг стропил, м<input inputMode="decimal" value={rafterSpacing} onChange={e=>setRafterSpacing(e.target.value)} placeholder="Например, 0.6"/></label>}
+    {isRoof&&roofFields.includes('rafterCount')&&<label>Количество стропил, шт.<input inputMode="numeric" value={rafterCount} onChange={e=>setRafterCount(e.target.value)} placeholder="Рассчитается по шагу"/></label>}
+    {isRoof&&roofFields.includes('timberSection')&&<label>Сечение древесины, мм<input value={timberSection} onChange={e=>setTimberSection(e.target.value)} placeholder="50×200"/></label>}
     {needsThickness&&<label>Толщина, мм<input inputMode="decimal" value={thickness} onChange={e=>setThickness(e.target.value)}/></label>}
     {needsCoats&&<label>Слоёв<input inputMode="numeric" value={coats} onChange={e=>setCoats(e.target.value)}/></label>}
     {needsReserve&&<label>Запас материалов, %<input inputMode="numeric" value={reserve} onChange={e=>setReserve(e.target.value)}/></label>}
