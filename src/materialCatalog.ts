@@ -127,7 +127,7 @@ export const MATERIAL_CATALOG:MaterialSpec[]=[
 
 {name:'Бордюр',unit:'м',packageSize:1,packageUnit:'шт.',waste:5,price:500,priceIsEstimate:true},
 {name:'Цемент',unit:'кг',packageSize:25,packageUnit:'мешок',waste:5,price:18,priceIsEstimate:true},
-{name:'Тротуарная плитка',unit:'м²',packageSize:0.96,packageUnit:'упаковка',waste:10,price:1200,priceIsEstimate:true}
+{name:'Тротуарная плитка',unit:'м²',packageSize:0.96,packageUnit:'упаковка',waste:10,price:1200,priceIsEstimate:true},
 
 {name:'Брусок контробрешётки',unit:'м',packageSize:3,packageUnit:'шт.',waste:5,price:180,priceIsEstimate:true},
 {name:'Утеплитель для кровли',unit:'м²',packageSize:5.76,packageUnit:'упаковка',waste:5,price:650,priceIsEstimate:true},
