@@ -55,7 +55,12 @@ const calc=(work:Work,rooms:Room)=>{
  if(work.name==='Установка розеток')return [{name:'Розетка',unit:'шт.',qty:floor*0.1*reserve}]
  if(work.name==='Разводка водоснабжения')return [{name:'Труба водоснабжения',unit:'м',qty:floor*0.5*reserve}]
  if(work.name==='Монтаж канализации')return [{name:'Канализационная труба',unit:'м',qty:floor*0.2*reserve}]
- if(work.name==='Монтаж металлочерепицы')return [{name:'Металлочерепица',unit:'м²',qty:(work.quantity||floor)*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.quantity||floor)*8*reserve}]
+ if(work.name==='Монтаж металлочерепицы')return [{name:'Металлочерепица',unit:'м²',qty:(work.quantity||floor)*1.1*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.quantity||floor)*8*reserve},{name:'Планка кровельная',unit:'м',qty:((work.roofRidge||0)+(work.roofEave||0)+(work.roofGable||0)+(work.roofAbutment||0))*1.05*reserve}]
+ if(/стропил/.test(work.name.toLowerCase())){const count=work.rafterCount||((work.roofEave||0)>0&&work.rafterSpacing?(work.roofEave/work.rafterSpacing)+1:0);return [{name:'Доска строительная',unit:'м',qty:count*(work.rafterLength||0)*reserve},{name:'Крепёж строительный',unit:'кг',qty:count*0.18*reserve},{name:'Деревозащитная пропитка',unit:'л',qty:count*(work.rafterLength||0)*0.08*reserve}]}
+ if(/мауэрлат/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:(work.roofEave||0)*1.05*reserve},{name:'Анкер',unit:'шт.',qty:Math.max(1,Math.ceil((work.roofEave||0)/1.5))}]
+ if(/коньков.*балк/.test(work.name.toLowerCase()))return [{name:'Брус',unit:'м',qty:(work.roofRidge||0)*1.05*reserve},{name:'Крепёж строительный',unit:'кг',qty:(work.roofRidge||0)*0.12*reserve}]
+ if(/обреш[её]тк/.test(work.name.toLowerCase()))return [{name:'Доска строительная',unit:'м',qty:(work.quantity||floor)*2.2*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.quantity||floor)*8*reserve}]
+ if(/ендов|примык|карнизн.*план|торцев.*план|кон[ьй]к.*кров|свес/.test(work.name.toLowerCase()))return [{name:'Планка кровельная',unit:'м',qty:(work.roofRidge||work.roofValley||work.roofEave||work.roofGable||work.roofAbutment||work.quantity||floor)*1.05*reserve},{name:'Крепёж кровельный',unit:'шт.',qty:(work.roofRidge||work.roofValley||work.roofEave||work.roofGable||work.roofAbutment||work.quantity||floor)*4*reserve}]
  const q=work.quantity&&work.quantity>0?work.quantity:(/кров|стропил|обреш|утеплен.*кров|мембран/.test(work.name.toLowerCase())?floor:(/покраск|шпакл|штукатур|облицовк|фасад|гипсокартон|кладк/.test(work.name.toLowerCase())?wall:floor))
  const n=work.name.toLowerCase()
  if(/разработк.*грунт|котлован|транше/.test(n))return [{name:'Грунт обратной засыпки',unit:'м³',qty:q*reserve}]
