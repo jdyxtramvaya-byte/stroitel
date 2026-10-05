@@ -19,6 +19,19 @@ body{background:#f4f6f8;font-family:system-ui,-apple-system,BlinkMacSystemFont,"
 <div id="root"><div id="boot"><div id="boot-card"><b>Строитель</b><div>Запуск приложения…</div><div id="boot-error"></div></div></div></div>
 <script>
 (function(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      return Promise.all(regs.map(function(reg){return reg.unregister();}));
+    }).then(function(){
+      if(window.caches) return caches.keys().then(function(keys){
+        return Promise.all(keys.map(function(key){return caches.delete(key);}));
+      });
+    }).catch(function(){});
+  }
+})();
+</script>
+<script>
+(function(){
   function showError(message){
     var el=document.getElementById('boot-error');
     if(el){el.style.display='block';el.textContent='Не удалось загрузить приложение.\\n\\n'+message;}
