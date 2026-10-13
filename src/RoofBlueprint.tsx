@@ -9,7 +9,7 @@ const fmt = (n: number) => new Intl.NumberFormat('ru-RU', { maximumFractionDigit
 
 function Dimension({ x1, y1, x2, y2, label, rotate = false }: { x1: number; y1: number; x2: number; y2: number; label: string; rotate?: boolean }) {
   const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-  return <g className="bp-dim"><line x1={x1} y1={y1} x2={x2} y2={y2}/><path d={'M '+(x1-4)+' '+(y1+4)+' l 8 -8 M '+(x2-4)+' '+(y2+4)+' l 8 -8}/><text x={mx} y={my-6} textAnchor="middle" transform={rotate ? 'rotate(-90 '+mx+' '+my+')' : undefined}>{label}</text></g>;
+  return <g className="bp-dim"><line x1={x1} y1={y1} x2={x2} y2={y2}/><path d={'M '+(x1-4)+' '+(y1+4)+' l 8 -8 M '+(x2-4)+' '+(y2+4)+' l 8 -8'}/><text x={mx} y={my-6} textAnchor="middle" transform={rotate ? 'rotate(-90 '+mx+' '+my+')' : undefined}>{label}</text></g>;
 }
 
 export default function RoofBlueprint({ project, view }: { project: RoofProject; view: RoofView }) {
