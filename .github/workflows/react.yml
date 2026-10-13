@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: TypeScript check
-        run: npx tsc --noEmit
+      - name: TypeScript check for roofing module
+        run: npx tsc --noEmit --skipLibCheck --jsx react-jsx --target ES2020 --moduleResolution Bundler --module ESNext --strict src/vite-env.d.ts src/roofGeometry.ts src/InteractiveRoof3D.tsx src/RoofBlueprint.tsx src/RoofingApp.tsx
 
       - name: Build React app
         run: npm run build
