@@ -60,3 +60,23 @@
   .roof-webgl-host{display:none!important}
   .interactive-roof-wrap::after{content:"Для печати выберите один из чертёжных видов: План, Фасад, Разрез или Каркас.";display:block;font-size:10pt;padding:20mm;text-align:center;color:#333}
 }
+
+
+/* Material appearance key */
+.material-visual-key{margin-top:12px;padding:14px;border:1px solid #e0e7e1;border-radius:13px;background:#fbfcf9}
+.material-key-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;color:#263b30;font-size:12px}
+.material-key-heading span{font-size:9px;color:#849087;font-weight:700;text-transform:uppercase;letter-spacing:.7px}
+.material-key-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.material-key-grid>div{display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:9px;padding:8px;background:#fff;border:1px solid #e8ece6;border-radius:10px;min-width:0}
+.material-swatch{grid-row:1/3;display:block;width:44px;height:40px;border-radius:7px;border:1px solid #00000012;background-color:#748b98;background-size:24px 24px}
+.swatch-cover.swatch-metal{background-image:repeating-linear-gradient(0deg,#334d5b 0 2px,#a8b8c0 2px 4px,#718896 4px 18px)}
+.swatch-cover.swatch-profile{background-image:repeating-linear-gradient(90deg,#aabac1 0 3px,#405c69 3px 5px,#8299a4 5px 14px)}
+.swatch-cover.swatch-shingle{background-color:#5c5a57;background-image:linear-gradient(0deg,transparent 90%,#252b2d 90%),linear-gradient(90deg,transparent 90%,#252b2d 90%);background-size:26px 15px}
+.swatch-cover.swatch-membrane,.swatch-membrane{background-color:#aab9b5;background-image:repeating-linear-gradient(0deg,transparent 0 10px,#dce4e0 10px 12px),repeating-linear-gradient(110deg,transparent 0 16px,#839590 16px 17px)}
+.swatch-wood,.swatch-frame{background-color:#b78553;background-image:repeating-linear-gradient(0deg,transparent 0 7px,#7d522e 7px 9px),repeating-linear-gradient(90deg,transparent 0 19px,#d3a474 19px 23px)}
+.swatch-metal{background-color:#8a9da5;background-image:repeating-linear-gradient(135deg,transparent 0 7px,#d3dce0 7px 9px,#526b77 9px 11px)}
+.material-key-grid b{font-size:10px;line-height:1.35;overflow-wrap:anywhere;color:#33433a}
+.material-key-grid small{font-size:9px;line-height:1.3;color:#859087;margin-top:2px}
+.material-key-note{margin:11px 0 0;font-size:9px;line-height:1.5;color:#7c877f}
+.cover-material-label{font-weight:800!important;color:#4b6756!important}
+@media(max-width:700px){.material-visual-key{padding:10px}.material-key-grid{grid-template-columns:1fr}.material-key-grid>div{grid-template-columns:42px minmax(0,1fr)}.material-key-heading{align-items:flex-start;flex-direction:column;gap:4px}.material-key-grid b{font-size:11px}.material-key-grid small{font-size:10px}}
