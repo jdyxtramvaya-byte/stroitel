@@ -13,6 +13,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const [showFrame, setShowFrame] = useState(true);
   const [showBeams, setShowBeams] = useState(true);
   const [showBattens, setShowBattens] = useState(true);
+  const [showCounterBattens, setShowCounterBattens] = useState(true);
+  const [showMembrane, setShowMembrane] = useState(true);
+  const [showInsulation, setShowInsulation] = useState(false);
   const [showSupports, setShowSupports] = useState(true);
   const [exploded, setExploded] = useState(false);
   const [ready, setReady] = useState(false);
@@ -119,9 +122,18 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     surfaceLayer.name = 'roof-surface-layer';
     const battenLayer = new THREE.Group();
     battenLayer.name = 'roof-batten-layer';
-    surfaceLayer.position.y = exploded ? 1.35 : 0;
-    battenLayer.position.y = exploded ? 0.62 : 0;
-    group.add(surfaceLayer, battenLayer);
+    const counterBattenLayer = new THREE.Group();
+    counterBattenLayer.name = 'roof-counter-batten-layer';
+    const membraneLayer = new THREE.Group();
+    membraneLayer.name = 'roof-membrane-layer';
+    const insulationLayer = new THREE.Group();
+    insulationLayer.name = 'roof-insulation-layer';
+    surfaceLayer.position.y = exploded ? 1.55 : 0;
+    battenLayer.position.y = exploded ? 0.9 : 0;
+    counterBattenLayer.position.y = exploded ? 0.42 : 0;
+    membraneLayer.position.y = exploded ? -0.12 : 0;
+    insulationLayer.position.y = exploded ? -0.72 : 0;
+    group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
     const centerX = project.length / 2;
@@ -170,7 +182,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       });
     }
 
-    // Timber members are real 3D solids, generated from the current roof dimensions.
+    // Separate visual materials for each roof build-up layer.
+    const membraneMaterial = new THREE.MeshStandardMaterial({ color: '#4f9e91', roughness: 0.9, side: THREE.DoubleSide, transparent: true, opacity: 0.92 });
+    const insulationMaterial = new THREE.MeshStandardMaterial({ color: '#e5c66b', roughness: 0.95, side: THREE.DoubleSide, transparent: true, opacity: 0.88 });
     const timber = new THREE.MeshStandardMaterial({ color: '#a66e3f', roughness: 0.82, metalness: 0 });
     const battenMaterial = new THREE.MeshStandardMaterial({ color: '#e6ad70', roughness: 0.78, emissive: '#4b2910', emissiveIntensity: 0.12 });
     const supportMaterial = new THREE.MeshStandardMaterial({ color: '#78502f', roughness: 0.88 });
@@ -186,6 +200,28 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       mesh.receiveShadow = true;
       target.add(mesh);
     };
+    const addRoofLayer = (target: THREE.Group, material: THREE.Material, verticalOffset: number) => {
+      geometry.faces.forEach(face => {
+        const vertices: number[] = [];
+        face.points.forEach(p => {
+          const v = point({ ...p, z: p.z + verticalOffset });
+          vertices.push(v.x, v.y, v.z);
+        });
+        const indices: number[] = [];
+        for (let i = 1; i < face.points.length - 1; i++) indices.push(0, i, i + 1);
+        const layerGeometry = new THREE.BufferGeometry();
+        layerGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        layerGeometry.setIndex(indices);
+        layerGeometry.computeVertexNormals();
+        const mesh = new THREE.Mesh(layerGeometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        target.add(mesh);
+      });
+    };
+    if (showMembrane) addRoofLayer(membraneLayer, membraneMaterial, -0.055);
+    if (showInsulation) addRoofLayer(insulationLayer, insulationMaterial, -0.22);
+
     const x0Frame = -project.overhang, x1Frame = project.length + project.overhang;
     const y0Frame = -project.overhang, y1Frame = project.width + project.overhang;
     const frameCount = Math.max(2, Math.min(100, Math.ceil(project.length / 0.6) + 1));
@@ -224,6 +260,27 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       }
       addBeam({ x: x0Frame, y: y0Frame, z: 0.04 }, { x: x1Frame, y: y0Frame, z: 0.04 }, 0.18, supportMaterial);
       addBeam({ x: x0Frame, y: y1Frame, z: 0.04 }, { x: x1Frame, y: y1Frame, z: 0.04 }, 0.18, supportMaterial);
+    }
+
+    if (showCounterBattens && project.type !== 'flat') {
+      // Counter-battens run up the roof slope and create a visible ventilation gap above the membrane.
+      const count = Math.max(3, Math.min(50, Math.ceil(project.length / 0.6) + 1));
+      const raised = (x: number, y: number): Point3 => {
+        const p = roofPoint(x, y);
+        return { ...p, z: p.z + 0.19 };
+      };
+      for (let i = 0; i < count; i++) {
+        const x = x0Frame + (x1Frame - x0Frame) * i / (count - 1);
+        if (project.type === 'gable') {
+          addBeam(raised(x, y0Frame), raised(x, project.width / 2), 0.075, supportMaterial, counterBattenLayer);
+          addBeam(raised(x, project.width / 2), raised(x, y1Frame), 0.075, supportMaterial, counterBattenLayer);
+        } else if (project.type === 'shed') {
+          addBeam(raised(x, y0Frame), raised(x, y1Frame), 0.075, supportMaterial, counterBattenLayer);
+        } else {
+          addBeam(raised(x, y0Frame), raised(x, project.width / 2), 0.075, supportMaterial, counterBattenLayer);
+          addBeam(raised(x, project.width / 2), raised(x, y1Frame), 0.075, supportMaterial, counterBattenLayer);
+        }
+      }
     }
 
     if (showBattens && project.type !== 'flat') {
@@ -314,7 +371,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showSupports, exploded, cover]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showInsulation, showSupports, exploded, cover]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -332,6 +389,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked)}/> Контур</label>
       <label><input type="checkbox" checked={showBeams} onChange={e => setShowBeams(e.target.checked)}/> Стропила и балки</label>
       <label><input type="checkbox" checked={showBattens} onChange={e => setShowBattens(e.target.checked)}/> Обрешётка</label>
+      <label><input type="checkbox" checked={showCounterBattens} onChange={e => setShowCounterBattens(e.target.checked)}/> Контробрешётка</label>
+      <label><input type="checkbox" checked={showMembrane} onChange={e => setShowMembrane(e.target.checked)}/> Мембрана</label>
+      <label><input type="checkbox" checked={showInsulation} onChange={e => setShowInsulation(e.target.checked)}/> Утеплитель</label>
       <label><input type="checkbox" checked={showSupports} onChange={e => setShowSupports(e.target.checked)}/> Стойки и подкосы</label>
       <button type="button" className={'btn btn-small ' + (exploded ? 'btn-primary' : 'btn-quiet')} aria-pressed={exploded} onClick={() => setExploded(v => !v)}>{exploded ? 'Собрать крышу' : 'Разобрать по слоям'}</button>
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
