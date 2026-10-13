@@ -50,7 +50,7 @@ export default function RoofBlueprint({ project, view }: { project: RoofProject;
   const planTop = 180 - W * scalePlan / 2;
   const planPoint = (p: Point3) => ({ x: planLeft + (p.x + project.overhang) * scalePlan, y: planTop + (p.y + project.overhang) * scalePlan });
   const project3D = (p: Point3) => {
-    const s = 300 / Math.max(L + W, 1);
+    const s = Math.min(300 / Math.max(L + W, 1), 190 / Math.max(0.34 * (L + W) + 1.35 * geometry.rise, 1));
     return { x: 380 + (p.x - p.y) * s * 0.72, y: 270 + (p.x + p.y) * s * 0.34 - p.z * s * 1.35 };
   };
   const drawingBorder = <g>
