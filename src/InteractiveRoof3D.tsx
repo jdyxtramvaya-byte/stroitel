@@ -94,8 +94,8 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments || object instanceof THREE.Line) {
           object.geometry.dispose();
           const material = object.material;
-          if (Array.isArray(material)) material.forEach(item => { if ('map' in item && item.map) item.map.dispose(); item.dispose(); });
-          else { if ('map' in material && material.map) material.map.dispose(); material.dispose(); }
+          if (Array.isArray(material)) material.forEach(item => { if (item instanceof THREE.MeshStandardMaterial && item.map) item.map.dispose(); item.dispose(); });
+          else { if (material instanceof THREE.MeshStandardMaterial && material.map) material.map.dispose(); material.dispose(); }
         }
       });
       renderer.dispose();
