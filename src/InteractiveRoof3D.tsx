@@ -3,10 +3,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { buildRoofGeometry, type RoofGeometryInput, type Point3 } from './roofGeometry';
 
-type Props = { project: RoofGeometryInput };
+type Props = { project: RoofGeometryInput; cover?: 'metal' | 'profile' | 'shingle' | 'membrane' };
 const clampCount = (n: number) => Math.max(2, Math.min(100, n));
 
-export default function InteractiveRoof3D({ project }: Props) {
+export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; controls: OrbitControls } | null>(null);
   const [showSurface, setShowSurface] = useState(true);
@@ -141,9 +141,9 @@ export default function InteractiveRoof3D({ project }: Props) {
         meshGeometry.setIndex(indices);
         meshGeometry.computeVertexNormals();
         const mesh = new THREE.Mesh(meshGeometry, new THREE.MeshStandardMaterial({
-          color: ['#9eabb1', '#c4cfd3', '#879ba4', '#b3c0c5'][index % 4],
-          roughness: 0.72,
-          metalness: 0.12,
+          color: cover === 'metal' ? ['#718896', '#8299a5', '#637d8b', '#9aabb4'][index % 4] : cover === 'profile' ? ['#7f98a3', '#93aab4', '#6f8995', '#a5b8c0'][index % 4] : cover === 'shingle' ? ['#5c5a57', '#706d68', '#4c4b49', '#858078'][index % 4] : ['#a9b8b5', '#bdc9c5', '#96a8a4', '#cbd4d0'][index % 4],
+          roughness: cover === 'metal' || cover === 'profile' ? 0.48 : 0.88,
+          metalness: cover === 'metal' || cover === 'profile' ? 0.32 : 0.02,
           side: THREE.DoubleSide,
           transparent: showFrame,
           opacity: showFrame ? 0.64 : 1,
