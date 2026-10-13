@@ -25,10 +25,11 @@ function calc(p:Project) {
  const rakes = p.type==='gable' ? 4*slopeLength : p.type==='shed' ? 2*slopeLength : p.type==='hip' ? 4*slopeLength : 0;
  const valleys = 0;
  const orderArea = baseArea*(1+num(p.waste)/100);
- const ridge = p.type==='gable' ? L+2*e : p.type==='hip' ? Math.max(0,L-W) : 0;
- const eaves = 2*(L+2*e);
- const rakes = p.type==='gable' ? 4*slopeLength : p.type==='shed' ? 2*slopeLength : 0;
- const valleys = p.type==='hip'?0:0;
+ const eaveLength = L+2*e;
+ const ridge = geometry.ridgeLength;
+ const eaves = 2*eaveLength;
+ const rakes = p.type==='gable' ? 4*slopeLength : p.type==='shed' ? 2*slopeLength : p.type==='hip' ? 4*slopeLength : 0;
+ const valleys = 0;
  const metalSheets = Math.ceil(orderArea/1.1);
  const membraneRolls = Math.ceil(orderArea/75);
  const battens = p.type==='flat'?0:Math.ceil(orderArea*3.2);
