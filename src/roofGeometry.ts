@@ -18,7 +18,6 @@ export type RoofGeometry = {
   faces: RoofFace[];
   totalArea: number;
   eaveLength: number;
-  rafterLength: number;
   plan: { x: number; y: number }[];
 };
 
