@@ -14,6 +14,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const [showBeams, setShowBeams] = useState(true);
   const [showBattens, setShowBattens] = useState(true);
   const [showSupports, setShowSupports] = useState(true);
+  const [exploded, setExploded] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -114,6 +115,13 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     }
     const group = new THREE.Group();
     group.name = 'roof-model';
+    const surfaceLayer = new THREE.Group();
+    surfaceLayer.name = 'roof-surface-layer';
+    const battenLayer = new THREE.Group();
+    battenLayer.name = 'roof-batten-layer';
+    surfaceLayer.position.y = exploded ? 1.35 : 0;
+    battenLayer.position.y = exploded ? 0.62 : 0;
+    group.add(surfaceLayer, battenLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
     const centerX = project.length / 2;
@@ -153,12 +161,12 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         }));
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        group.add(mesh);
+        surfaceLayer.add(mesh);
         const edge = new THREE.LineSegments(
           new THREE.EdgesGeometry(meshGeometry, 1),
           new THREE.LineBasicMaterial({ color: '#3f5863', transparent: true, opacity: 0.9 })
         );
-        group.add(edge);
+        surfaceLayer.add(edge);
       });
     }
 
@@ -166,7 +174,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     const timber = new THREE.MeshStandardMaterial({ color: '#a66e3f', roughness: 0.82, metalness: 0 });
     const battenMaterial = new THREE.MeshStandardMaterial({ color: '#e6ad70', roughness: 0.78, emissive: '#4b2910', emissiveIntensity: 0.12 });
     const supportMaterial = new THREE.MeshStandardMaterial({ color: '#78502f', roughness: 0.88 });
-    const addBeam = (a: Point3, b: Point3, thickness: number, material: THREE.Material) => {
+    const addBeam = (a: Point3, b: Point3, thickness: number, material: THREE.Material, target: THREE.Group = group) => {
       const start = point(a), end = point(b);
       const direction = new THREE.Vector3().subVectors(end, start);
       const length = direction.length();
@@ -176,7 +184,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), direction.normalize());
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      group.add(mesh);
+      target.add(mesh);
     };
     const x0Frame = -project.overhang, x1Frame = project.length + project.overhang;
     const y0Frame = -project.overhang, y1Frame = project.width + project.overhang;
@@ -231,13 +239,13 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
           const t = j / (battenCount - 1);
           const yA = t * project.width / 2;
           const yB = project.width - yA;
-          addBeam(raised(x0Frame, yA), raised(x1Frame, yA), 0.09, battenMaterial);
-          addBeam(raised(x0Frame, yB), raised(x1Frame, yB), 0.09, battenMaterial);
+          addBeam(raised(x0Frame, yA), raised(x1Frame, yA), 0.09, battenMaterial, battenLayer);
+          addBeam(raised(x0Frame, yB), raised(x1Frame, yB), 0.09, battenMaterial, battenLayer);
         }
       } else {
         for (let j = 1; j < battenCount; j++) {
           const y = y0Frame + (y1Frame - y0Frame) * j / battenCount;
-          addBeam(raised(x0Frame, y), raised(x1Frame, y), 0.09, battenMaterial);
+          addBeam(raised(x0Frame, y), raised(x1Frame, y), 0.09, battenMaterial, battenLayer);
         }
       }
     }
@@ -306,7 +314,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showSupports, cover]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showSupports, exploded, cover]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -325,6 +333,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       <label><input type="checkbox" checked={showBeams} onChange={e => setShowBeams(e.target.checked)}/> Стропила и балки</label>
       <label><input type="checkbox" checked={showBattens} onChange={e => setShowBattens(e.target.checked)}/> Обрешётка</label>
       <label><input type="checkbox" checked={showSupports} onChange={e => setShowSupports(e.target.checked)}/> Стойки и подкосы</label>
+      <button type="button" className={'btn btn-small ' + (exploded ? 'btn-primary' : 'btn-quiet')} aria-pressed={exploded} onClick={() => setExploded(v => !v)}>{exploded ? 'Собрать крышу' : 'Разобрать по слоям'}</button>
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
       <span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
