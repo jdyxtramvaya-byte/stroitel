@@ -23,7 +23,7 @@ function Dimension({ x1, y1, x2, y2, label, vertical = false }: {
   </g>;
 }
 
-export default function RoofBlueprint({ project, view }: { project: RoofProject; view: RoofView }) {
+export default function RoofBlueprint({ project, view, cover = 'metal' }: { project: RoofProject; view: RoofView; cover?: 'metal' | 'profile' | 'shingle' | 'membrane' }) {
   const geometry = buildRoofGeometry(project);
   const { length: L, width: W } = geometry.footprint;
   const roofType = project.type;
@@ -31,6 +31,13 @@ export default function RoofBlueprint({ project, view }: { project: RoofProject;
   const baseDefs = <defs>
     <pattern id="bpGrid" width="20" height="20" patternUnits="userSpaceOnUse">
       <path d="M20 0H0V20" fill="none" stroke="#e7ecef" strokeWidth=".8"/>
+    </pattern>
+    <pattern id="bpCoverPattern" width={cover === "profile" ? 14 : cover === "shingle" ? 28 : cover === "membrane" ? 18 : 24} height={cover === "shingle" ? 14 : 24} patternUnits="userSpaceOnUse">
+      <rect width="100%" height="100%" fill={cover === "metal" ? "#718896" : cover === "profile" ? "#7f98a3" : cover === "shingle" ? "#5c5a57" : "#a9b8b5"}/>
+      {cover === "metal" && <><path d="M0 1H24 M0 4H24" stroke="#c0cdd3" strokeWidth="1.4"/><path d="M0 6H24" stroke="#3d5968" strokeWidth="1.2"/><path d="M5 6V24 M8 6V24" stroke="#9eafb8" strokeWidth="1.2"/></>}
+      {cover === "profile" && <><path d="M0 0V24 M3 0V24 M7 0V24" stroke="#d0dbe0" strokeWidth="1.4"/><path d="M9 0V24" stroke="#405c69" strokeWidth="2"/></>}
+      {cover === "shingle" && <><path d="M0 1H28 M0 13H28 M14 1V13 M0 13V24 M28 13V24" stroke="#282f31" strokeWidth="1.4" fill="none"/><path d="M1 3H13 M15 15H27" stroke="#89857f" strokeWidth="1"/></>}
+      {cover === "membrane" && <><path d="M0 5H18 M0 17H18" stroke="#dce5e2" strokeWidth="1.2"/><path d="M4 0L0 5 M13 12L9 17" stroke="#809490" strokeWidth="1"/></>}
     </pattern>
     <pattern id="bpFineGrid" width="5" height="5" patternUnits="userSpaceOnUse">
       <path d="M5 0H0V5" fill="none" stroke="#f0f3f5" strokeWidth=".5"/>
@@ -70,7 +77,7 @@ export default function RoofBlueprint({ project, view }: { project: RoofProject;
     {geometry.faces.map((f, i) => {
       const pts = f.points.map(project3D);
       return <g key={f.id}>
-        <path d={pathOf(pts)} fill={i % 2 ? 'url(#bpFaceA)' : 'url(#bpFaceB)'} stroke="#304f61" strokeWidth="1.8" strokeLinejoin="round"/>
+        <path d={pathOf(pts)} fill="url(#bpCoverPattern)" stroke="#304f61" strokeWidth="1.8" strokeLinejoin="round"/>
         {f.points.length === 4 && <path d={pathOf(pts)} fill="none" stroke="#eaf2f5" strokeWidth=".7" opacity=".9"/>}
       </g>;
     })}
@@ -81,7 +88,7 @@ export default function RoofBlueprint({ project, view }: { project: RoofProject;
   </g>;
 
   const plan = <g>
-    {geometry.faces.map((f, i) => <path key={f.id} d={pathOf(f.points.map(planPoint))} fill={i % 2 ? '#e6eef2' : '#d4e1e8'} fillOpacity=".8" stroke="#38586a" strokeWidth="1.6" strokeLinejoin="round"/>)}
+    {geometry.faces.map((f, i) => <path key={f.id} d={pathOf(f.points.map(planPoint))} fill="url(#bpCoverPattern)" fillOpacity=".96" stroke="#38586a" strokeWidth="1.6" strokeLinejoin="round"/>)}
     {geometry.faces.map(f => <text key={'label-'+f.id} x={f.points.map(planPoint).reduce((s,p)=>s+p.x,0)/f.points.length} y={f.points.map(planPoint).reduce((s,p)=>s+p.y,0)/f.points.length} textAnchor="middle" className="bp-face-label">{f.label}</text>)}
     <Dimension x1={planLeft} y1={planTop - 25} x2={planLeft + L * scalePlan} y2={planTop - 25} label={fmt(L) + ' м'}/>
     <Dimension x1={planLeft - 25} y1={planTop} x2={planLeft - 25} y2={planTop + W * scalePlan} label={fmt(W) + ' м'} vertical/>
@@ -141,7 +148,7 @@ export default function RoofBlueprint({ project, view }: { project: RoofProject;
 
   const title = view === '3d' ? 'ОБЪЁМНАЯ МОДЕЛЬ' : view === 'plan' ? 'ПЛАН КРОВЛИ' : view === 'elevation' ? 'ФАСАД / ПРОФИЛЬ' : view === 'section' ? 'ПОПЕРЕЧНЫЙ РАЗРЕЗ' : 'СТРОПИЛЬНЫЙ КАРКАС';
   const drawing = view === '3d' ? roof3d : view === 'plan' ? plan : view === 'elevation' ? elevation : view === 'section' ? section : frameView;
-  if (view === '3d') return <InteractiveRoof3D project={project} />;
+  if (view === '3d') return <InteractiveRoof3D project={project} cover={cover} />;
   return <svg className={'roof-blueprint bp-view-' + view} viewBox="0 0 760 500" role="img" aria-label={title + ', ' + names[roofType]}>
     {baseDefs}
     {drawingBorder}
