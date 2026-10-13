@@ -19,6 +19,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const [showInsulation, setShowInsulation] = useState(false);
   const [showSupports, setShowSupports] = useState(true);
   const [exploded, setExploded] = useState(false);
+  const [explodedSpacing, setExplodedSpacing] = useState(1);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -131,12 +132,14 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     deckLayer.name = 'roof-deck-layer';
     const insulationLayer = new THREE.Group();
     insulationLayer.name = 'roof-insulation-layer';
-    surfaceLayer.position.y = exploded ? 1.55 : 0;
-    battenLayer.position.y = exploded ? 0.9 : 0;
-    counterBattenLayer.position.y = exploded ? 0.42 : 0;
-    membraneLayer.position.y = exploded ? -0.12 : 0;
-    deckLayer.position.y = exploded ? -0.43 : 0;
-    insulationLayer.position.y = exploded ? -0.88 : 0;
+    // Keep layer separation adjustable while preserving the assembled position at zero.
+    const separation = exploded ? explodedSpacing : 0;
+    surfaceLayer.position.y = 1.55 * separation;
+    battenLayer.position.y = 0.9 * separation;
+    counterBattenLayer.position.y = 0.42 * separation;
+    membraneLayer.position.y = -0.12 * separation;
+    deckLayer.position.y = -0.43 * separation;
+    insulationLayer.position.y = -0.88 * separation;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
@@ -377,7 +380,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showDeck, showInsulation, showSupports, exploded, cover]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showDeck, showInsulation, showSupports, exploded, explodedSpacing, cover]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -401,6 +404,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       <label><input type="checkbox" checked={showInsulation} onChange={e => setShowInsulation(e.target.checked)}/> Утеплитель</label>
       <label><input type="checkbox" checked={showSupports} onChange={e => setShowSupports(e.target.checked)}/> Стойки и подкосы</label>
       <button type="button" className={'btn btn-small ' + (exploded ? 'btn-primary' : 'btn-quiet')} aria-pressed={exploded} onClick={() => setExploded(v => !v)}>{exploded ? 'Собрать крышу' : 'Разобрать по слоям'}</button>
+      {exploded && <label className="roof-layer-spacing">Разнос слоёв <input type="range" min="0.5" max="2.5" step="0.1" value={explodedSpacing} onChange={e => setExplodedSpacing(Number(e.target.value))} aria-label="Расстояние между слоями крыши"/><span>{explodedSpacing.toFixed(1)}×</span></label>}
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
       <span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
