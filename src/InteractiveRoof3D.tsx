@@ -164,14 +164,17 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     if (showSurface) {
       geometry.faces.forEach((face, index) => {
         const vertices: number[] = [];
+        const uvs: number[] = [];
         face.points.forEach(p => {
           const v = point(p);
           vertices.push(v.x, v.y, v.z);
+          uvs.push(p.x, p.y);
         });
         const indices: number[] = [];
         for (let i = 1; i < face.points.length - 1; i++) indices.push(0, i, i + 1);
         const meshGeometry = new THREE.BufferGeometry();
         meshGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        meshGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         meshGeometry.setIndex(indices);
         meshGeometry.computeVertexNormals();
         const mesh = new THREE.Mesh(meshGeometry, new THREE.MeshStandardMaterial({
