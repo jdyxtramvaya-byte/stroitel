@@ -164,7 +164,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
 
     // Timber members are real 3D solids, generated from the current roof dimensions.
     const timber = new THREE.MeshStandardMaterial({ color: '#a66e3f', roughness: 0.82, metalness: 0 });
-    const battenMaterial = new THREE.MeshStandardMaterial({ color: '#d0a16e', roughness: 0.86 });
+    const battenMaterial = new THREE.MeshStandardMaterial({ color: '#e6ad70', roughness: 0.78, emissive: '#4b2910', emissiveIntensity: 0.12 });
     const supportMaterial = new THREE.MeshStandardMaterial({ color: '#78502f', roughness: 0.88 });
     const addBeam = (a: Point3, b: Point3, thickness: number, material: THREE.Material) => {
       const start = point(a), end = point(b);
@@ -219,10 +219,26 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     }
 
     if (showBattens && project.type !== 'flat') {
-      const battenCount = Math.max(3, Math.min(70, Math.ceil(project.width / 0.35) + 1));
-      for (let j = 1; j < battenCount - 1; j++) {
-        const y = y0Frame + (y1Frame - y0Frame) * j / (battenCount - 1);
-        addBeam(roofPoint(x0Frame, y), roofPoint(x1Frame, y), 0.055, battenMaterial);
+      // Horizontal roof battens run parallel to the eaves, separately on each roof plane.
+      // Raise them visibly above the roof skin so they remain legible in the assembled model.
+      const battenCount = Math.max(4, Math.min(70, Math.ceil(project.width / 0.32) + 1));
+      const raised = (x: number, y: number): Point3 => {
+        const p = roofPoint(x, y);
+        return { ...p, z: p.z + 0.12 };
+      };
+      if (project.type === 'gable') {
+        for (let j = 1; j < battenCount - 1; j++) {
+          const t = j / (battenCount - 1);
+          const yA = t * project.width / 2;
+          const yB = project.width - yA;
+          addBeam(raised(x0Frame, yA), raised(x1Frame, yA), 0.09, battenMaterial);
+          addBeam(raised(x0Frame, yB), raised(x1Frame, yB), 0.09, battenMaterial);
+        }
+      } else {
+        for (let j = 1; j < battenCount; j++) {
+          const y = y0Frame + (y1Frame - y0Frame) * j / battenCount;
+          addBeam(raised(x0Frame, y), raised(x1Frame, y), 0.09, battenMaterial);
+        }
       }
     }
 
