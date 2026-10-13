@@ -29,7 +29,7 @@ export default function InteractiveRoof3D({ project }: Props) {
     renderer.toneMappingExposure = 1.1;
     renderer.setClearColor('#edf2f4');
     renderer.domElement.className = 'roof-webgl-canvas';
-    host.replaceChildren(renderer.domElement);
+    host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#edf2f4');
