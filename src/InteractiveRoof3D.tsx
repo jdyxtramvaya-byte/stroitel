@@ -15,6 +15,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const [showBattens, setShowBattens] = useState(true);
   const [showCounterBattens, setShowCounterBattens] = useState(true);
   const [showMembrane, setShowMembrane] = useState(true);
+  const [showDeck, setShowDeck] = useState(false);
   const [showInsulation, setShowInsulation] = useState(false);
   const [showSupports, setShowSupports] = useState(true);
   const [exploded, setExploded] = useState(false);
@@ -126,14 +127,17 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     counterBattenLayer.name = 'roof-counter-batten-layer';
     const membraneLayer = new THREE.Group();
     membraneLayer.name = 'roof-membrane-layer';
+    const deckLayer = new THREE.Group();
+    deckLayer.name = 'roof-deck-layer';
     const insulationLayer = new THREE.Group();
     insulationLayer.name = 'roof-insulation-layer';
     surfaceLayer.position.y = exploded ? 1.55 : 0;
     battenLayer.position.y = exploded ? 0.9 : 0;
     counterBattenLayer.position.y = exploded ? 0.42 : 0;
     membraneLayer.position.y = exploded ? -0.12 : 0;
-    insulationLayer.position.y = exploded ? -0.72 : 0;
-    group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, insulationLayer);
+    deckLayer.position.y = exploded ? -0.43 : 0;
+    insulationLayer.position.y = exploded ? -0.88 : 0;
+    group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
     const centerX = project.length / 2;
@@ -184,6 +188,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
 
     // Separate visual materials for each roof build-up layer.
     const membraneMaterial = new THREE.MeshStandardMaterial({ color: '#4f9e91', roughness: 0.9, side: THREE.DoubleSide, transparent: true, opacity: 0.92 });
+    const deckMaterial = new THREE.MeshStandardMaterial({ color: '#c18b5b', roughness: 0.9, side: THREE.DoubleSide, transparent: true, opacity: 0.78 });
     const insulationMaterial = new THREE.MeshStandardMaterial({ color: '#e5c66b', roughness: 0.95, side: THREE.DoubleSide, transparent: true, opacity: 0.88 });
     const timber = new THREE.MeshStandardMaterial({ color: '#a66e3f', roughness: 0.82, metalness: 0 });
     const battenMaterial = new THREE.MeshStandardMaterial({ color: '#e6ad70', roughness: 0.78, emissive: '#4b2910', emissiveIntensity: 0.12 });
@@ -220,7 +225,8 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       });
     };
     if (showMembrane) addRoofLayer(membraneLayer, membraneMaterial, -0.055);
-    if (showInsulation) addRoofLayer(insulationLayer, insulationMaterial, -0.22);
+    if (showDeck) addRoofLayer(deckLayer, deckMaterial, -0.16);
+    if (showInsulation) addRoofLayer(insulationLayer, insulationMaterial, -0.3);
 
     const x0Frame = -project.overhang, x1Frame = project.length + project.overhang;
     const y0Frame = -project.overhang, y1Frame = project.width + project.overhang;
@@ -371,7 +377,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showInsulation, showSupports, exploded, cover]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showDeck, showInsulation, showSupports, exploded, cover]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -391,6 +397,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       <label><input type="checkbox" checked={showBattens} onChange={e => setShowBattens(e.target.checked)}/> Обрешётка</label>
       <label><input type="checkbox" checked={showCounterBattens} onChange={e => setShowCounterBattens(e.target.checked)}/> Контробрешётка</label>
       <label><input type="checkbox" checked={showMembrane} onChange={e => setShowMembrane(e.target.checked)}/> Мембрана</label>
+      <label><input type="checkbox" checked={showDeck} onChange={e => setShowDeck(e.target.checked)}/> Настил</label>
       <label><input type="checkbox" checked={showInsulation} onChange={e => setShowInsulation(e.target.checked)}/> Утеплитель</label>
       <label><input type="checkbox" checked={showSupports} onChange={e => setShowSupports(e.target.checked)}/> Стойки и подкосы</label>
       <button type="button" className={'btn btn-small ' + (exploded ? 'btn-primary' : 'btn-quiet')} aria-pressed={exploded} onClick={() => setExploded(v => !v)}>{exploded ? 'Собрать крышу' : 'Разобрать по слоям'}</button>
