@@ -22,6 +22,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const sceneRef = useRef<{ scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; controls: OrbitControls } | null>(null);
   const [showSurface, setShowSurface] = useState(true);
   const [showFrame, setShowFrame] = useState(true);
+  const [showLayers, setShowLayers] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -138,6 +139,28 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     walls.receiveShadow = true;
     group.add(walls);
 
+    if (showLayers) {
+      geometry.faces.forEach(face => {
+        const membranePoints: number[] = [];
+        face.points.forEach(p => { const v = point(p); membranePoints.push(v.x, v.y - 0.045, v.z); });
+        const membraneIndices: number[] = [];
+        for (let i = 1; i < face.points.length - 1; i++) membraneIndices.push(0, i, i + 1);
+        const membraneGeometry = new THREE.BufferGeometry();
+        membraneGeometry.setAttribute('position', new THREE.Float32BufferAttribute(membranePoints, 3));
+        membraneGeometry.setIndex(membraneIndices); membraneGeometry.computeVertexNormals();
+        group.add(new THREE.Mesh(membraneGeometry, new THREE.MeshStandardMaterial({ color: '#8ea99b', roughness: 0.92, side: THREE.DoubleSide, transparent: true, opacity: 0.94 })));
+        if (face.points.length === 4) {
+          const battens: THREE.Vector3[] = [];
+          for (let t = 0.08; t < 0.96; t += 0.12) {
+            const a = face.points[0], b = face.points[1], c = face.points[2], d = face.points[3];
+            const left = { x: a.x + (d.x-a.x)*t, y: a.y + (d.y-a.y)*t, z: a.z + (d.z-a.z)*t };
+            const right = { x: b.x + (c.x-b.x)*t, y: b.y + (c.y-b.y)*t, z: b.z + (c.z-b.z)*t };
+            const va = point(left), vb = point(right); battens.push(new THREE.Vector3(va.x, va.y + 0.012, va.z), new THREE.Vector3(vb.x, vb.y + 0.012, vb.z));
+          }
+          group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(battens), new THREE.LineBasicMaterial({ color: '#bd8754', transparent: true, opacity: 0.98 })));
+        }
+      });
+    }
     if (showSurface) {
       geometry.faces.forEach((face, index) => {
         const vertices: number[] = [];
@@ -157,8 +180,8 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
           roughness: cover === 'metal' || cover === 'profile' ? 0.38 : 0.86,
           metalness: cover === 'metal' || cover === 'profile' ? 0.35 : 0.02,
           side: THREE.DoubleSide,
-          transparent: showFrame,
-          opacity: showFrame ? 0.64 : 1,
+          transparent: showFrame || showLayers,
+          opacity: showLayers ? 0.38 : showFrame ? 0.64 : 1,
         }));
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -224,7 +247,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, cover]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showLayers, cover]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -240,6 +263,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     <div className="roof-3d-toolbar">
       <label><input type="checkbox" checked={showSurface} onChange={e => setShowSurface(e.target.checked)}/> Покрытие</label>
       <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked)}/> Каркас</label>
+      <label><input type="checkbox" checked={showLayers} onChange={e => setShowLayers(e.target.checked)}/> Слои</label>
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
       <span className="cover-material-label">Фактура: {cover === 'metal' ? 'металлочерепица' : cover === 'profile' ? 'профнастил' : cover === 'shingle' ? 'гибкая черепица' : 'мембрана'}</span><span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
