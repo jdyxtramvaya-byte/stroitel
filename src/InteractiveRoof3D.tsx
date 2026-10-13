@@ -11,6 +11,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const sceneRef = useRef<{ scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; controls: OrbitControls } | null>(null);
   const [showSurface, setShowSurface] = useState(true);
   const [showFrame, setShowFrame] = useState(true);
+  const [showBeams, setShowBeams] = useState(true);
+  const [showBattens, setShowBattens] = useState(true);
+  const [showSupports, setShowSupports] = useState(true);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -159,6 +162,81 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       });
     }
 
+    // Timber members are real 3D solids, generated from the current roof dimensions.
+    const timber = new THREE.MeshStandardMaterial({ color: '#a66e3f', roughness: 0.82, metalness: 0 });
+    const battenMaterial = new THREE.MeshStandardMaterial({ color: '#d0a16e', roughness: 0.86 });
+    const supportMaterial = new THREE.MeshStandardMaterial({ color: '#78502f', roughness: 0.88 });
+    const addBeam = (a: Point3, b: Point3, thickness: number, material: THREE.Material) => {
+      const start = point(a), end = point(b);
+      const direction = new THREE.Vector3().subVectors(end, start);
+      const length = direction.length();
+      if (length < 0.001) return;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(length, thickness, thickness), material);
+      mesh.position.copy(start).add(end).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), direction.normalize());
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    };
+    const x0Frame = -project.overhang, x1Frame = project.length + project.overhang;
+    const y0Frame = -project.overhang, y1Frame = project.width + project.overhang;
+    const frameCount = Math.max(2, Math.min(100, Math.ceil(project.length / 0.6) + 1));
+    const roofPoint = (x: number, y: number): Point3 => {
+      const yy = Math.max(0, Math.min(project.width, y));
+      let z = 0;
+      if (project.type === 'gable') z = Math.max(0, geometry.rise * (1 - Math.abs(yy - project.width / 2) / Math.max(project.width / 2, 0.001)));
+      else if (project.type === 'shed') z = geometry.rise * yy / Math.max(project.width, 0.001);
+      else if (project.type === 'hip') {
+        const dx = Math.min(x + project.overhang, project.length + project.overhang - x);
+        const dy = Math.min(yy + project.overhang, project.width + project.overhang - yy);
+        z = Math.max(0, Math.min(dx, dy) * Math.tan(project.pitch * Math.PI / 180));
+      }
+      return { x, y, z: z + 0.03 };
+    };
+
+    if (showBeams && project.type !== 'flat') {
+      // Paired rafters (or mono-pitch rafters) at 600 mm nominal spacing.
+      for (let i = 0; i < frameCount; i++) {
+        const x = x0Frame + (x1Frame - x0Frame) * i / (frameCount - 1);
+        if (project.type === 'gable') {
+          addBeam({ x, y: y0Frame, z: 0.06 }, roofPoint(x, project.width / 2), 0.16, timber);
+          addBeam(roofPoint(x, project.width / 2), { x, y: y1Frame, z: 0.06 }, 0.16, timber);
+          addBeam({ x, y: y0Frame, z: 0.02 }, { x, y: y1Frame, z: 0.02 }, 0.14, supportMaterial);
+        } else if (project.type === 'shed') {
+          addBeam({ x, y: y0Frame, z: 0.06 }, { x, y: y1Frame, z: geometry.rise + 0.06 }, 0.16, timber);
+        } else {
+          const centerY = project.width / 2;
+          addBeam(roofPoint(x, y0Frame), roofPoint(x, centerY), 0.14, timber);
+          addBeam(roofPoint(x, centerY), roofPoint(x, y1Frame), 0.14, timber);
+        }
+      }
+      // Ridge beam and perimeter wall plates.
+      if (project.type === 'gable') {
+        addBeam(roofPoint(x0Frame, project.width / 2), roofPoint(x1Frame, project.width / 2), 0.2, supportMaterial);
+      }
+      addBeam({ x: x0Frame, y: y0Frame, z: 0.04 }, { x: x1Frame, y: y0Frame, z: 0.04 }, 0.18, supportMaterial);
+      addBeam({ x: x0Frame, y: y1Frame, z: 0.04 }, { x: x1Frame, y: y1Frame, z: 0.04 }, 0.18, supportMaterial);
+    }
+
+    if (showBattens && project.type !== 'flat') {
+      const battenCount = Math.max(3, Math.min(70, Math.ceil(project.width / 0.35) + 1));
+      for (let j = 1; j < battenCount - 1; j++) {
+        const y = y0Frame + (y1Frame - y0Frame) * j / (battenCount - 1);
+        addBeam(roofPoint(x0Frame, y), roofPoint(x1Frame, y), 0.055, battenMaterial);
+      }
+    }
+
+    if (showSupports && project.type === 'gable') {
+      const supportCount = Math.max(1, Math.min(8, Math.floor(project.length / 2.5)));
+      for (let i = 1; i <= supportCount; i++) {
+        const x = project.length * i / (supportCount + 1);
+        const top = roofPoint(x, project.width / 2);
+        addBeam({ x, y: project.width / 2, z: 0.05 }, top, 0.13, supportMaterial);
+        addBeam({ x, y: project.width / 2, z: Math.max(0.25, geometry.rise * 0.55) }, roofPoint(x, project.width * 0.22), 0.09, timber);
+        addBeam({ x, y: project.width / 2, z: Math.max(0.25, geometry.rise * 0.55) }, roofPoint(x, project.width * 0.78), 0.09, timber);
+      }
+    }
+
     if (showFrame) {
       const linePoints: THREE.Vector3[] = [];
       const addLine = (a: Point3, b: Point3) => { linePoints.push(point(a), point(b)); };
@@ -212,7 +290,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showSupports, cover]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -227,7 +305,10 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   return <div className="interactive-roof-wrap">
     <div className="roof-3d-toolbar">
       <label><input type="checkbox" checked={showSurface} onChange={e => setShowSurface(e.target.checked)}/> Покрытие</label>
-      <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked)}/> Каркас</label>
+      <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked)}/> Контур</label>
+      <label><input type="checkbox" checked={showBeams} onChange={e => setShowBeams(e.target.checked)}/> Стропила и балки</label>
+      <label><input type="checkbox" checked={showBattens} onChange={e => setShowBattens(e.target.checked)}/> Обрешётка</label>
+      <label><input type="checkbox" checked={showSupports} onChange={e => setShowSupports(e.target.checked)}/> Стойки и подкосы</label>
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
       <span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
