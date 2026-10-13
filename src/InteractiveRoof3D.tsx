@@ -226,8 +226,8 @@ export default function InteractiveRoof3D({ project }: Props) {
 
   return <div className="interactive-roof-wrap">
     <div className="roof-3d-toolbar">
-      <label><input type="checkbox" checked={showSurface} onChange={e => setShowSurface(e.target.checked}/> Покрытие</label>
-      <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked}/> Каркас</label>
+      <label><input type="checkbox" checked={showSurface} onChange={e => setShowSurface(e.target.checked)}/> Покрытие</label>
+      <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked)}/> Каркас</label>
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
       <span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
