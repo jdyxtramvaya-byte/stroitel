@@ -1,5 +1,6 @@
 import React from 'react';
 import { buildRoofGeometry, type Point3, type RoofGeometryInput } from './roofGeometry';
+import InteractiveRoof3D from './InteractiveRoof3D';
 
 export type RoofType = 'gable' | 'hip' | 'shed' | 'flat';
 export type RoofProject = RoofGeometryInput;
@@ -140,6 +141,7 @@ export default function RoofBlueprint({ project, view }: { project: RoofProject;
 
   const title = view === '3d' ? 'ОБЪЁМНАЯ МОДЕЛЬ' : view === 'plan' ? 'ПЛАН КРОВЛИ' : view === 'elevation' ? 'ФАСАД / ПРОФИЛЬ' : view === 'section' ? 'ПОПЕРЕЧНЫЙ РАЗРЕЗ' : 'СТРОПИЛЬНЫЙ КАРКАС';
   const drawing = view === '3d' ? roof3d : view === 'plan' ? plan : view === 'elevation' ? elevation : view === 'section' ? section : frameView;
+  if (view === '3d') return <InteractiveRoof3D project={project} />;
   return <svg className={'roof-blueprint bp-view-' + view} viewBox="0 0 760 500" role="img" aria-label={title + ', ' + names[roofType]}>
     {baseDefs}
     {drawingBorder}
