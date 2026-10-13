@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Home, Ruler, Layers3, Calculator, ClipboardList, Plus, ChevronRight, Trash2, Download, RotateCcw, CheckCircle2, Info, PanelsTopLeft, Hammer, CircleDollarSign, Box, X } from 'lucide-react';
 import './roofing.css';
 import RoofBlueprint, { type RoofView } from './RoofBlueprint';
+import { buildRoofGeometry } from './roofGeometry';
 
 type RoofType = 'gable' | 'hip' | 'shed' | 'flat';
 type Cover = 'metal' | 'profile' | 'shingle' | 'membrane';
@@ -16,15 +17,13 @@ const num = (n:number,min=0) => Math.max(min,Number.isFinite(n)?n:0);
 function readProjects():Project[] { try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch { return []; } }
 function calc(p:Project) {
  const L=num(p.length), W=num(p.width), e=num(p.overhang), pitch=num(p.pitch);
- const rise = Math.tan(pitch*Math.PI/180);
- const run = p.type==='shed'?W:(W/2);
- const slope = p.type==='flat'?1:Math.sqrt(1+rise*rise);
- const eaveLength = L+2*e;
- const runWithEave = run+e;
- const slopeLength = p.type==='flat'?runWithEave:Math.sqrt(runWithEave*runWithEave+(runWithEave*rise)*(runWithEave*rise));
- let area = p.type==='flat' ? (L+2*e)*(W+2*e) : p.type==='shed' ? eaveLength*slopeLength : 2*eaveLength*slopeLength;
- if(p.type==='hip') area*=0.94;
- const baseArea = Math.max(0,area);
+ const geometry = buildRoofGeometry({type:p.type,length:L,width:W,pitch,overhang:e});
+ const slopeLength = p.type==='flat' ? Math.max(L+2*e,W+2*e) : geometry.rafterLength;
+ const baseArea = Math.max(0,geometry.totalArea);
+ const ridge = geometry.ridgeLength;
+ const eaves = 2*(L+2*e);
+ const rakes = p.type==='gable' ? 4*slopeLength : p.type==='shed' ? 2*slopeLength : p.type==='hip' ? 4*slopeLength : 0;
+ const valleys = 0;
  const orderArea = baseArea*(1+num(p.waste)/100);
  const ridge = p.type==='gable' ? L+2*e : p.type==='hip' ? Math.max(0,L-W) : 0;
  const eaves = 2*(L+2*e);
