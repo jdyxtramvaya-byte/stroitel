@@ -347,6 +347,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
       <span className="cover-material-label">Фактура: {cover === 'metal' ? 'металлочерепица' : cover === 'profile' ? 'профнастил' : cover === 'shingle' ? 'гибкая черепица' : 'мембрана'}</span><span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
+    <div className="roof-frame-key"><b>Несущий каркас:</b> мауэрлат · стропила · коньковый прогон · затяжки · стойки · подкосы · прогоны · металлические крепления</div>
     <div ref={hostRef} className="roof-webgl-host" aria-label="Интерактивная трёхмерная модель крыши">
       {!ready && <div className="roof-webgl-fallback">3D-графика недоступна в этом браузере. Используйте чертёжные виды.</div>}
     </div>
