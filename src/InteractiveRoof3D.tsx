@@ -197,48 +197,125 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       });
     }
 
+
     if (showFrame) {
-      const linePoints: THREE.Vector3[] = [];
-      const addLine = (a: Point3, b: Point3) => { linePoints.push(point(a), point(b)); };
+      const timber = new THREE.MeshStandardMaterial({ color: '#a87543', roughness: 0.86 });
+      const darkerTimber = new THREE.MeshStandardMaterial({ color: '#82552f', roughness: 0.9 });
+      const steel = new THREE.MeshStandardMaterial({ color: '#6f8994', metalness: 0.55, roughness: 0.38 });
+      const addBeam = (a: Point3, b: Point3, width = 0.08, height = 0.16, material = timber) => {
+        const start = point(a), end = point(b);
+        const direction = end.clone().sub(start);
+        const length = direction.length();
+        if (length < 0.015) return;
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(length, height, width), material);
+        beam.position.copy(start).add(end).multiplyScalar(0.5);
+        beam.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), direction.normalize());
+        beam.castShadow = true;
+        beam.receiveShadow = true;
+        group.add(beam);
+      };
       const x0 = -project.overhang, x1 = project.length + project.overhang;
       const y0 = -project.overhang, y1 = project.width + project.overhang;
-      const stations = clampCount(Math.ceil(project.length / 0.6));
-      for (let i = 0; i < stations; i++) {
-        const x = x0 + (x1 - x0) * (i / (stations - 1));
-        if (project.type === 'gable') {
-          addLine({ x, y: y0, z: 0 }, { x, y: project.width / 2, z: geometry.rise });
-          addLine({ x, y: project.width / 2, z: geometry.rise }, { x, y: y1, z: 0 });
-        } else if (project.type === 'shed') {
-          addLine({ x, y: y0, z: 0 }, { x, y: y1, z: geometry.rise });
-        } else if (project.type === 'hip') {
-          const centerRise = Math.max(0, Math.min(x - x0, x1 - x, W / 2) * Math.tan(project.pitch * Math.PI / 180));
-          const centerY = project.width / 2;
-          addLine({ x, y: y0, z: Math.max(0, centerRise - Math.abs(centerY - y0) * Math.tan(project.pitch * Math.PI / 180)) }, { x, y: centerY, z: centerRise });
-          addLine({ x, y: centerY, z: centerRise }, { x, y: y1, z: Math.max(0, centerRise - Math.abs(y1 - centerY) * Math.tan(project.pitch * Math.PI / 180)) });
-        } else {
-          for (let j = 0; j <= 4; j++) {
-            const y = y0 + (y1 - y0) * j / 4;
-            addLine({ x, y, z: 0.035 }, { x, y, z: 0.035 });
+      const centerY = project.width / 2;
+      const stations = clampCount(Math.ceil((x1 - x0) / 0.6));
+      const ridgeY = centerY;
+      const pitchRad = project.pitch * Math.PI / 180;
+      const eaveA: Point3 = { x: x0, y: y0, z: 0.04 };
+      const eaveB: Point3 = { x: x1, y: y0, z: 0.04 };
+      const eaveC: Point3 = { x: x0, y: y1, z: 0.04 };
+      const eaveD: Point3 = { x: x1, y: y1, z: 0.04 };
+
+      // Wall plates (мауэрлат) around the bearing walls.
+      addBeam(eaveA, eaveB, 0.14, 0.14, darkerTimber);
+      addBeam(eaveC, eaveD, 0.14, 0.14, darkerTimber);
+      if (project.type === 'gable') {
+        // Ridge beam and paired common rafters.
+        addBeam({ x: x0, y: ridgeY, z: geometry.rise }, { x: x1, y: ridgeY, z: geometry.rise }, 0.16, 0.2, darkerTimber);
+        for (let i = 0; i < stations; i++) {
+          const x = x0 + (x1 - x0) * i / (stations - 1);
+          const left: Point3 = { x, y: y0, z: 0.08 };
+          const ridge: Point3 = { x, y: ridgeY, z: geometry.rise };
+          const right: Point3 = { x, y: y1, z: 0.08 };
+          addBeam(left, ridge, 0.07, 0.18);
+          addBeam(ridge, right, 0.07, 0.18);
+          // Ceiling joist / tie beam across the building.
+          addBeam({ x, y: y0, z: 0.14 }, { x, y: y1, z: 0.14 }, 0.07, 0.16, darkerTimber);
+          // Collar tie in the upper third of each truss.
+          const tieY0 = centerY - project.width * 0.22;
+          const tieY1 = centerY + project.width * 0.22;
+          const tieZ = geometry.rise * 0.56;
+          addBeam({ x, y: tieY0, z: tieZ }, { x, y: tieY1, z: tieZ }, 0.055, 0.12);
+        }
+        // Purlins running along the roof slope, supported by rafters.
+        for (const side of [-1, 1]) {
+          for (const fraction of [0.28, 0.56, 0.8]) {
+            const y = centerY + side * (project.width / 2) * fraction;
+            const z = geometry.rise * (1 - fraction);
+            addBeam({ x: x0, y, z: z + 0.035 }, { x: x1, y, z: z + 0.035 }, 0.08, 0.12, darkerTimber);
           }
         }
+        // Ridge support posts and diagonal braces, shown as schematic framing.
+        const postCount = Math.max(2, Math.floor((x1 - x0) / 2.4) + 1);
+        for (let i = 0; i < postCount; i++) {
+          const x = x0 + (x1 - x0) * i / (postCount - 1);
+          addBeam({ x, y: ridgeY, z: 0.18 }, { x, y: ridgeY, z: Math.max(0.2, geometry.rise - 0.12) }, 0.12, 0.14, darkerTimber);
+          if (i > 0 && i < postCount - 1) {
+            addBeam({ x, y: ridgeY, z: geometry.rise * 0.42 }, { x: x - Math.min(0.75, (x1-x0)*0.08), y: ridgeY - Math.min(0.65, project.width*0.12), z: geometry.rise * 0.16 }, 0.055, 0.1);
+            addBeam({ x, y: ridgeY, z: geometry.rise * 0.42 }, { x: x + Math.min(0.75, (x1-x0)*0.08), y: ridgeY + Math.min(0.65, project.width*0.12), z: geometry.rise * 0.16 }, 0.055, 0.1);
+          }
+        }
+      } else if (project.type === 'shed') {
+        const lowY = y0, highY = y1;
+        for (let i = 0; i < stations; i++) {
+          const x = x0 + (x1 - x0) * i / (stations - 1);
+          addBeam({ x, y: lowY, z: 0.08 }, { x, y: highY, z: geometry.rise + 0.08 }, 0.07, 0.18);
+        }
+        for (const fraction of [0.25, 0.5, 0.75]) {
+          const y = y0 + (y1-y0)*fraction;
+          addBeam({ x: x0, y, z: geometry.rise*fraction + 0.04 }, { x: x1, y, z: geometry.rise*fraction + 0.04 }, 0.08, 0.12, darkerTimber);
+        }
+      } else if (project.type === 'hip') {
+        // Hip rafters from corners to ridge ends, plus common rafters.
+        const inset = Math.min(project.length + 2*project.overhang, project.width + 2*project.overhang) / 2;
+        const ridgeStart = x0 + inset;
+        const ridgeEnd = x1 - inset;
+        const ridgeZ = geometry.rise;
+        if (ridgeEnd > ridgeStart + 0.08) addBeam({ x: ridgeStart, y: centerY, z: ridgeZ }, { x: ridgeEnd, y: centerY, z: ridgeZ }, 0.14, 0.18, darkerTimber);
+        addBeam({ x: x0, y: y0, z: 0.08 }, { x: ridgeStart, y: centerY, z: ridgeZ }, 0.1, 0.2, darkerTimber);
+        addBeam({ x: x0, y: y1, z: 0.08 }, { x: ridgeStart, y: centerY, z: ridgeZ }, 0.1, 0.2, darkerTimber);
+        addBeam({ x: x1, y: y0, z: 0.08 }, { x: ridgeEnd, y: centerY, z: ridgeZ }, 0.1, 0.2, darkerTimber);
+        addBeam({ x: x1, y: y1, z: 0.08 }, { x: ridgeEnd, y: centerY, z: ridgeZ }, 0.1, 0.2, darkerTimber);
+        for (let i = 0; i < stations; i++) {
+          const x = x0 + (x1 - x0) * i / (stations - 1);
+          const peakZ = Math.max(0.08, Math.min(x - x0, x1 - x, project.width / 2) * Math.tan(pitchRad));
+          addBeam({ x, y: y0, z: 0.08 }, { x, y: centerY, z: peakZ }, 0.065, 0.16);
+          addBeam({ x, y: centerY, z: peakZ }, { x, y: y1, z: 0.08 }, 0.065, 0.16);
+        }
+      } else {
+        // Flat roof joists and perimeter beams.
+        const acrossCount = clampCount(Math.ceil((y1-y0)/0.6));
+        for (let i = 0; i < acrossCount; i++) {
+          const y = y0 + (y1-y0)*i/(acrossCount-1);
+          addBeam({ x: x0, y, z: 0.08 }, { x: x1, y, z: 0.08 }, 0.07, 0.16);
+        }
+        for (const fraction of [0.25, 0.5, 0.75]) {
+          const y = y0 + (y1-y0)*fraction;
+          addBeam({ x: x0, y, z: 0.12 }, { x: x1, y, z: 0.12 }, 0.1, 0.14, darkerTimber);
+        }
       }
-      geometry.faces.forEach(face => {
-        face.points.forEach((p, i) => addLine(p, face.points[(i + 1) % face.points.length]));
-      });
-      const framingGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-      group.add(new THREE.LineSegments(framingGeometry, new THREE.LineBasicMaterial({ color: '#a36c3c', linewidth: 2 })));
-      if (project.type === 'flat') {
-        const deckPoints: THREE.Vector3[] = [];
-        const nx = clampCount(Math.ceil(L / 0.6)), nz = clampCount(Math.ceil(W / 0.6));
-        for (let i = 0; i < nx; i++) {
-          const x = x0 + (x1 - x0) * i / (nx - 1);
-          deckPoints.push(point({ x, y: y0, z: 0.05 }), point({ x, y: y1, z: 0.05 }));
+      // Eaves and gable-end outlines stay visible as thin technical edges.
+      const outline: THREE.Vector3[] = [];
+      geometry.faces.forEach(face => face.points.forEach((p, i) => outline.push(point(p), point(face.points[(i + 1) % face.points.length]))));
+      group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(outline), new THREE.LineBasicMaterial({ color: '#705037', transparent: true, opacity: 0.72 })));
+      // Metal brackets at the wall-plate / rafter junctions.
+      for (let i = 0; i < stations; i++) {
+        const x = x0 + (x1-x0)*i/(stations-1);
+        for (const y of [y0, y1]) {
+          const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.055,0.1,0.025), steel);
+          const v = point({x,y,z:0.09});
+          bracket.position.copy(v);
+          group.add(bracket);
         }
-        for (let i = 0; i < nz; i++) {
-          const y = y0 + (y1 - y0) * i / (nz - 1);
-          deckPoints.push(point({ x: x0, y, z: 0.05 }), point({ x: x1, y, z: 0.05 }));
-        }
-        group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(deckPoints), new THREE.LineBasicMaterial({ color: '#a36c3c' })));
       }
     }
 
