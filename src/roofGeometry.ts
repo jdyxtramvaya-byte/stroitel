@@ -14,6 +14,7 @@ export type RoofGeometry = {
   footprint: { length: number; width: number };
   rise: number;
   ridgeLength: number;
+  rafterLength: number;
   faces: RoofFace[];
   totalArea: number;
   eaveLength: number;
@@ -144,6 +145,7 @@ export function buildRoofGeometry(input: RoofGeometryInput): RoofGeometry {
     footprint: { length: L, width: W },
     rise,
     ridgeLength,
+    rafterLength,
     faces,
     totalArea,
     eaveLength,
