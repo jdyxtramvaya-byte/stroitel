@@ -405,7 +405,6 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       <label><input type="checkbox" checked={showSupports} onChange={e => setShowSupports(e.target.checked)}/> Стойки и подкосы</label>
       <button type="button" className={'btn btn-small ' + (exploded ? 'btn-primary' : 'btn-quiet')} aria-pressed={exploded} onClick={() => setExploded(v => !v)}>{exploded ? 'Собрать крышу' : 'Разобрать по слоям'}</button>
       {exploded && <label className="roof-layer-spacing">Разнос слоёв <input type="range" min="0.5" max="2.5" step="0.1" value={explodedSpacing} onChange={e => setExplodedSpacing(Number(e.target.value))} aria-label="Расстояние между слоями крыши"/><span>{explodedSpacing.toFixed(1)}×</span></label>}
-      {exploded && <label className="roof-layer-gap-control">Расстояние между слоями <input type="range" min="0.5" max="2.2" step="0.1" value={layerGap} onChange={e => setLayerGap(Number(e.target.value))} aria-label="Расстояние между слоями крыши"/><output>{layerGap.toFixed(1)}×</output></label>}
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
       <span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
