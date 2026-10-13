@@ -148,7 +148,6 @@ export function buildRoofGeometry(input: RoofGeometryInput): RoofGeometry {
     faces,
     totalArea,
     eaveLength,
-    rafterLength,
     plan: [
       { x: x0, y: y0 }, { x: x1, y: y0 },
       { x: x1, y: y1 }, { x: x0, y: y1 },
