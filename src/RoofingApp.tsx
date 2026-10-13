@@ -20,17 +20,11 @@ function calc(p:Project) {
  const geometry = buildRoofGeometry({type:p.type,length:L,width:W,pitch,overhang:e});
  const slopeLength = p.type==='flat' ? Math.max(L+2*e,W+2*e) : geometry.rafterLength;
  const baseArea = Math.max(0,geometry.totalArea);
- const ridge = geometry.ridgeLength;
- const eaves = 2*(L+2*e);
- const rakes = p.type==='gable' ? 4*slopeLength : p.type==='shed' ? 2*slopeLength : p.type==='hip' ? 4*slopeLength : 0;
- const valleys = 0;
  const orderArea = baseArea*(1+num(p.waste)/100);
  const eaveLength = L+2*e;
  const ridge = geometry.ridgeLength;
  const eaves = 2*eaveLength;
  const rakes = p.type==='gable' ? 4*slopeLength : p.type==='shed' ? 2*slopeLength : p.type==='hip' ? 4*slopeLength : 0;
- const valleys = 0;
- const metalSheets = Math.ceil(orderArea/1.1);
  const membraneRolls = Math.ceil(orderArea/75);
  const battens = p.type==='flat'?0:Math.ceil(orderArea*3.2);
  const counterBattens = p.type==='flat'?0:Math.ceil((eaveLength*2+ridge)*1.1);
