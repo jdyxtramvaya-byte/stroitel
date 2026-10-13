@@ -3,10 +3,21 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { buildRoofGeometry, type RoofGeometryInput, type Point3 } from './roofGeometry';
 
-type Props = { project: RoofGeometryInput };
+type CoverKind = 'metal' | 'profile' | 'shingle' | 'membrane';
+type Props = { project: RoofGeometryInput; cover?: CoverKind };
+function createCoverTexture(cover: CoverKind) {
+  const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d'); if (!ctx) return null;
+  ctx.fillStyle = cover === 'metal' ? '#718896' : cover === 'profile' ? '#7f98a3' : cover === 'shingle' ? '#5c5a57' : '#a9b8b5'; ctx.fillRect(0,0,256,256);
+  if (cover === 'metal') { for (let y=0;y<256;y+=32) { ctx.fillStyle='#c0cdd3';ctx.fillRect(0,y,256,2);ctx.fillStyle='#3d5968';ctx.fillRect(0,y+4,256,2);for(let x=0;x<256;x+=64){ctx.fillStyle='#9eafb8';ctx.fillRect(x+4,y+6,3,24);ctx.fillStyle='#425c6b';ctx.fillRect(x+8,y+6,2,24);} } }
+  else if (cover === 'profile') { for(let x=0;x<256;x+=24){ctx.fillStyle='#c0cdd3';ctx.fillRect(x,0,3,256);ctx.fillStyle='#405c69';ctx.fillRect(x+4,0,3,256);ctx.fillStyle='#8197a2';ctx.fillRect(x+7,0,14,256);} }
+  else if (cover === 'shingle') { for(let y=0;y<256;y+=32){ctx.strokeStyle='#282f31';ctx.lineWidth=2;for(let x=-32+(y/32%2)*32;x<256;x+=64){ctx.fillStyle='#686663';ctx.fillRect(x+1,y+1,62,30);ctx.strokeRect(x+1,y+1,62,30);} } }
+  else { ctx.strokeStyle='#dce5e2';ctx.lineWidth=2;for(let y=16;y<256;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();} }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace=THREE.SRGBColorSpace; texture.wrapS=texture.wrapT=THREE.RepeatWrapping; texture.repeat.set(1.8,1.8); return texture;
+}
 const clampCount = (n: number) => Math.max(2, Math.min(100, n));
 
-export default function InteractiveRoof3D({ project }: Props) {
+export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; controls: OrbitControls } | null>(null);
   const [showSurface, setShowSurface] = useState(true);
@@ -82,8 +93,8 @@ export default function InteractiveRoof3D({ project }: Props) {
         if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments || object instanceof THREE.Line) {
           object.geometry.dispose();
           const material = object.material;
-          if (Array.isArray(material)) material.forEach(item => item.dispose());
-          else material.dispose();
+          if (Array.isArray(material)) material.forEach(item => { if ('map' in item && item.map) item.map.dispose(); item.dispose(); });
+          else { if ('map' in material && material.map) material.map.dispose(); material.dispose(); }
         }
       });
       renderer.dispose();
@@ -141,9 +152,10 @@ export default function InteractiveRoof3D({ project }: Props) {
         meshGeometry.setIndex(indices);
         meshGeometry.computeVertexNormals();
         const mesh = new THREE.Mesh(meshGeometry, new THREE.MeshStandardMaterial({
-          color: ['#9eabb1', '#c4cfd3', '#879ba4', '#b3c0c5'][index % 4],
-          roughness: 0.72,
-          metalness: 0.12,
+          color: '#ffffff',
+          map: createCoverTexture(cover),
+          roughness: cover === 'metal' || cover === 'profile' ? 0.38 : 0.86,
+          metalness: cover === 'metal' || cover === 'profile' ? 0.35 : 0.02,
           side: THREE.DoubleSide,
           transparent: showFrame,
           opacity: showFrame ? 0.64 : 1,
@@ -212,7 +224,7 @@ export default function InteractiveRoof3D({ project }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, cover]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -229,7 +241,7 @@ export default function InteractiveRoof3D({ project }: Props) {
       <label><input type="checkbox" checked={showSurface} onChange={e => setShowSurface(e.target.checked)}/> Покрытие</label>
       <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked)}/> Каркас</label>
       <button type="button" className="btn btn-quiet btn-small" onClick={resetView}>Сбросить вид</button>
-      <span>Вращение мышью / пальцем · масштаб жестом</span>
+      <span className="cover-material-label">Фактура: {cover === 'metal' ? 'металлочерепица' : cover === 'profile' ? 'профнастил' : cover === 'shingle' ? 'гибкая черепица' : 'мембрана'}</span><span>Вращение мышью / пальцем · масштаб жестом</span>
     </div>
     <div ref={hostRef} className="roof-webgl-host" aria-label="Интерактивная трёхмерная модель крыши">
       {!ready && <div className="roof-webgl-fallback">3D-графика недоступна в этом браузере. Используйте чертёжные виды.</div>}
