@@ -99,3 +99,23 @@
 .roof-dimensions-note{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#7b898f;font-size:9px;line-height:1.55}
 .roof-dimensions-note svg{flex:none;margin-top:1px;color:#658394}
 @media(max-width:700px){.roof-dimensions-panel{padding:12px}.roof-dimensions-heading{flex-direction:column;gap:8px}.roof-dimensions-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.roof-dimensions-grid>div{padding:10px}.roof-dimensions-grid small{font-size:9px;min-height:30px}.roof-dimensions-grid b{font-size:14px}.roof-dimensions-note{font-size:9px}}
+
+
+/* Timber takeoff */
+.timber-panel{margin:22px 0;padding:24px}
+.timber-input-grid,.timber-section-grid,.timber-result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.timber-subheading{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:24px}
+.timber-section-control{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+.timber-section-control>b{grid-column:1/-1;font-size:13px}
+.timber-result-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:22px}
+.timber-result-grid>div{display:flex;flex-direction:column;gap:8px;min-width:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--pale)}
+.timber-result-grid small,.timber-cut-list small{color:var(--muted);font-size:11px}
+.timber-result-grid b{font-size:20px;overflow-wrap:anywhere}
+.timber-result-grid span{font-size:11px;color:var(--muted)}
+.timber-cut-list{display:grid;grid-template-columns:1.5fr repeat(3,minmax(0,1fr));gap:12px;margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:14px}
+.timber-cut-list>div{display:flex;flex-direction:column;gap:7px;min-width:0}
+.timber-cut-list>div:first-child span{font-size:12px;line-height:1.5;color:var(--muted)}
+.timber-cut-list>div:not(:first-child){padding-left:12px;border-left:1px solid var(--line)}
+.timber-cut-list>div:not(:first-child)>b{font-size:13px}
+@media(max-width:900px){.timber-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.timber-cut-list{grid-template-columns:repeat(2,minmax(0,1fr))}.timber-cut-list>div:not(:first-child){padding-left:0;border-left:0}.timber-cut-list>div:first-child{grid-column:1/-1}}
+@media(max-width:600px){.timber-panel{padding:16px}.timber-input-grid,.timber-section-grid{grid-template-columns:1fr}.timber-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.timber-result-grid>div{padding:12px}.timber-result-grid b{font-size:17px}.timber-cut-list{grid-template-columns:1fr}}
