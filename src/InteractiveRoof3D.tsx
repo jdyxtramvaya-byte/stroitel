@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { buildRoofGeometry, type RoofGeometryInput, type Point3 } from './roofGeometry';
+import type { RoofAccessory } from './RoofAccessories';
 
-type Props = { project: RoofGeometryInput; cover?: 'metal' | 'profile' | 'shingle' | 'membrane' };
+type Props = { project: RoofGeometryInput; cover?: 'metal' | 'profile' | 'shingle' | 'membrane'; accessories?: RoofAccessory[] };
 const clampCount = (n: number) => Math.max(2, Math.min(100, n));
 
 // Dispose generated geometry, materials, and per-mesh textures when rebuilding the
@@ -100,7 +101,7 @@ function makeCoverTexture(kind: NonNullable<Props['cover']>, color: string) {
   return texture;
 }
 
-export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
+export default function InteractiveRoof3D({ project, cover = 'metal', accessories = [] }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; controls: OrbitControls } | null>(null);
   const [showSurface, setShowSurface] = useState(true);
@@ -515,6 +516,67 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       }
     }
 
+    // Roof fixtures are rendered as separate visible objects above the covering.
+    // Their plan coordinates are measured from the building's near-left corner.
+    const fixtureBox = (w: number, h: number, d: number, color: string, position: THREE.Vector3, rotationX = 0, roughness = 0.72) => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, d),
+        new THREE.MeshStandardMaterial({ color, roughness, metalness: color === '#26343a' ? 0.42 : 0.04 })
+      );
+      mesh.position.copy(position);
+      mesh.rotation.x = rotationX;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+      return mesh;
+    };
+    accessories.forEach(accessory => {
+      const x = Math.max(0.25, Math.min(project.length - 0.25, accessory.x));
+      const y = Math.max(0.25, Math.min(project.width - 0.25, accessory.y));
+      const p = roofPoint(x, y);
+      const baseY = p.z + surfaceLayer.position.y + 0.035;
+      const base = new THREE.Vector3(x - centerX, baseY, y - centerZ);
+      const before = roofPoint(x, Math.max(-project.overhang, y - 0.05));
+      const after = roofPoint(x, Math.min(project.width + project.overhang, y + 0.05));
+      const slope = (after.z - before.z) / Math.max(0.1, Math.min(project.width + project.overhang, y + 0.05) - Math.max(-project.overhang, y - 0.05));
+      const roofAngle = -Math.atan(slope);
+      const w = Math.max(0.15, Math.min(3, accessory.width));
+      const d = Math.max(0.15, Math.min(3, accessory.depth));
+      const h = Math.max(0.15, Math.min(3, accessory.height));
+      if (accessory.type === 'skylight') {
+        // A raised frame and dark glass, aligned with the local roof slope.
+        fixtureBox(w, 0.09, d, '#d8e1e5', new THREE.Vector3(base.x, base.y + 0.035, base.z), roofAngle, 0.42);
+        fixtureBox(Math.max(0.1, w - 0.12), 0.025, Math.max(0.1, d - 0.12), '#315c70', new THREE.Vector3(base.x, base.y + 0.09, base.z), roofAngle, 0.22);
+        fixtureBox(Math.max(0.06, w - 0.16), 0.018, 0.035, '#e8eef0', new THREE.Vector3(base.x, base.y + 0.105, base.z), roofAngle, 0.3);
+      } else if (accessory.type === 'vent') {
+        const radius = w / 2;
+        const tube = new THREE.Mesh(
+          new THREE.CylinderGeometry(radius * 0.82, radius, h, 20),
+          new THREE.MeshStandardMaterial({ color: '#566c77', roughness: 0.38, metalness: 0.48 })
+        );
+        tube.position.set(base.x, base.y + h / 2, base.z);
+        tube.castShadow = true;
+        group.add(tube);
+        const cap = new THREE.Mesh(
+          new THREE.CylinderGeometry(radius * 1.25, radius * 1.25, 0.07, 20),
+          new THREE.MeshStandardMaterial({ color: '#26343a', roughness: 0.38, metalness: 0.5 })
+        );
+        cap.position.set(base.x, base.y + h + 0.035, base.z);
+        cap.castShadow = true;
+        group.add(cap);
+      } else {
+        const isChimney = accessory.type === 'chimney';
+        const bodyColor = isChimney ? '#a85f4d' : '#929fa4';
+        fixtureBox(w + 0.16, 0.06, d + 0.16, '#26343a', new THREE.Vector3(base.x, base.y + 0.025, base.z), roofAngle, 0.48);
+        fixtureBox(w, h, d, bodyColor, new THREE.Vector3(base.x, base.y + h / 2, base.z), 0, 0.86);
+        if (isChimney) {
+          fixtureBox(w + 0.1, 0.07, d + 0.1, '#4b5559', new THREE.Vector3(base.x, base.y + h + 0.035, base.z), 0, 0.55);
+        } else {
+          fixtureBox(w + 0.08, 0.06, d + 0.08, '#6f7e84', new THREE.Vector3(base.x, base.y + h + 0.03, base.z), 0, 0.65);
+        }
+      }
+    });
+
     scene.add(group);
     const size = Math.max(L, W, geometry.rise * 1.6, 4);
     camera.position.set(size * 1.35, size * 0.95, size * 1.35);
@@ -523,7 +585,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showDeck, showInsulation, showSupports, exploded, explodedSpacing, cover, coverColor]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showDeck, showInsulation, showSupports, exploded, explodedSpacing, cover, coverColor, accessories]);
 
   const resetView = () => {
     const state = sceneRef.current;
