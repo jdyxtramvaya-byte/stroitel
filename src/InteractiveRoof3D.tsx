@@ -230,13 +230,14 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
     // of shifting the whole stack by several metres.
     const separation = exploded ? explodedSpacing : 0;
     const explodedOffset = 0.18 * separation;
-    insulationLayer.position.y = explodedOffset;
-    deckLayer.position.y = 2 * explodedOffset;
-    membraneLayer.position.y = 3 * explodedOffset;
+    // In assembled mode the layers sit close to their real installation heights.
+    // Exploded mode adds the same 18 cm step to each successive layer.
+    insulationLayer.position.y = -0.22 + explodedOffset;
+    deckLayer.position.y = -0.10 + 2 * explodedOffset;
+    membraneLayer.position.y = -0.02 + 3 * explodedOffset;
     counterBattenLayer.position.y = 4 * explodedOffset;
-    // Preserve the assembled stack offsets and add only one consistent exploded step per layer.
-    battenLayer.position.y = 0.15 + 5 * explodedOffset;
-    surfaceLayer.position.y = 0.37 + 6 * explodedOffset;
+    battenLayer.position.y = 5 * explodedOffset;
+    surfaceLayer.position.y = 0.16 + 6 * explodedOffset;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
@@ -343,18 +344,21 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
     const y0Frame = -project.overhang, y1Frame = project.width + project.overhang;
     const frameCount = Math.max(2, Math.min(100, Math.ceil(project.length / 0.6) + 1));
     const roofPoint = (x: number, y: number): Point3 => {
-      const yy = Math.max(0, Math.min(project.width, y));
+      // All structural members use the same roof-plane equations as the covering.
+      // Coordinates include the overhang, so the eave remains at height zero and
+      // the roof reaches the wall line at the correct non-zero height.
+      const slope = Math.tan(project.pitch * Math.PI / 180);
       let z = 0;
-      if (project.type === 'gable') z = Math.max(0, geometry.rise * (1 - Math.abs(yy - project.width / 2) / Math.max(project.width / 2, 0.001)));
-      else if (project.type === 'shed') z = geometry.rise * yy / Math.max(project.width, 0.001);
-      else if (project.type === 'hip') {
-        // Use the actual eave-edge coordinates here (including overhang); clamping
-        // y to the wall footprint makes the hip roof incorrectly rise at its edges.
-        const dx = Math.min(x + project.overhang, project.length + project.overhang - x);
-        const dy = Math.min(y + project.overhang, project.width + project.overhang - y);
-        z = Math.max(0, Math.min(dx, dy) * Math.tan(project.pitch * Math.PI / 180));
+      if (project.type === 'gable') {
+        z = Math.max(0, geometry.rise - Math.abs(y - project.width / 2) * slope);
+      } else if (project.type === 'shed') {
+        z = Math.max(0, (y + project.overhang) * slope);
+      } else if (project.type === 'hip') {
+        const dx = Math.max(0, Math.min(x + project.overhang, project.length + project.overhang - x));
+        const dy = Math.max(0, Math.min(y + project.overhang, project.width + project.overhang - y));
+        z = Math.min(dx, dy) * slope;
       }
-      return { x, y, z: z + 0.03 };
+      return { x, y, z: z + 0.015 };
     };
 
     if (showBeams && project.type !== 'flat') {
@@ -386,7 +390,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
       const count = Math.max(3, Math.min(50, Math.ceil(project.length / 0.6) + 1));
       const raised = (x: number, y: number): Point3 => {
         const p = roofPoint(x, y);
-        return { ...p, z: p.z + 0.19 };
+        return { ...p, z: p.z + 0.04 };
       };
       for (let i = 0; i < count; i++) {
         const x = x0Frame + (x1Frame - x0Frame) * i / (count - 1);
@@ -422,7 +426,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
       const battenCount = Math.max(4, Math.min(70, Math.ceil(project.width / 0.32) + 1));
       const raised = (x: number, y: number): Point3 => {
         const p = roofPoint(x, y);
-        return { ...p, z: p.z + 0.12 };
+        return { ...p, z: p.z + 0.11 };
       };
       if (project.type === 'gable') {
         for (let j = 1; j < battenCount - 1; j++) {
