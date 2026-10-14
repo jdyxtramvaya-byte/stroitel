@@ -85,7 +85,8 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const [showSupports, setShowSupports] = useState(true);
   const [exploded, setExploded] = useState(false);
   const [explodedSpacing, setExplodedSpacing] = useState(1);
-  const [ready, setReady] = useState(false);\n  const [coverColor, setCoverColor] = useState(defaultCoverColors[cover]);
+  const [ready, setReady] = useState(false);
+  const [coverColor, setCoverColor] = useState(defaultCoverColors[cover]);
 
   useEffect(() => {
     const host = hostRef.current;
