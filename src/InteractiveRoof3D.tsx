@@ -232,7 +232,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     deckLayer.position.y = 1.1 * separation;
     membraneLayer.position.y = 1.5 * separation;
     counterBattenLayer.position.y = 1.9 * separation;
-    battenLayer.position.y = 0.14 + 2.3 * separation;
+    // Leave enough clearance for the 75 mm counter-batten and 90 mm batten to meet
+    // as timber layers rather than visibly intersecting each other.
+    battenLayer.position.y = 0.15 + 2.3 * separation;
     surfaceLayer.position.y = 0.32 + 2.7 * separation;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
@@ -273,6 +275,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         const mesh = new THREE.Mesh(meshGeometry, new THREE.MeshStandardMaterial({
           color: '#ffffff',
           map: coverTexture || undefined,
+          // The same procedural detail map adds shallow relief to seams, ribs and shingle edges.
+          bumpMap: coverTexture || undefined,
+          bumpScale: cover === 'metal' ? 0.018 : cover === 'profile' ? 0.026 : cover === 'shingle' ? 0.035 : 0.012,
           roughness: cover === 'metal' ? 0.29 : cover === 'profile' ? 0.34 : cover === 'shingle' ? 0.94 : 0.88,
           metalness: cover === 'metal' ? 0.52 : cover === 'profile' ? 0.42 : 0.01,
           side: THREE.DoubleSide,
