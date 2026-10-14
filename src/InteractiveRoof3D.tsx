@@ -232,12 +232,12 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
     const explodedOffset = 0.18 * separation;
     // In assembled mode the layers sit close to their real installation heights.
     // Exploded mode adds the same 18 cm step to each successive layer.
-    insulationLayer.position.y = -0.22 + explodedOffset;
-    deckLayer.position.y = -0.10 + 2 * explodedOffset;
-    membraneLayer.position.y = -0.02 + 3 * explodedOffset;
+    insulationLayer.position.y = -0.18 + explodedOffset;
+    deckLayer.position.y = -0.07 + 2 * explodedOffset;
+    membraneLayer.position.y = -0.005 + 3 * explodedOffset;
     counterBattenLayer.position.y = 4 * explodedOffset;
     battenLayer.position.y = 5 * explodedOffset;
-    surfaceLayer.position.y = 0.16 + 6 * explodedOffset;
+    surfaceLayer.position.y = 0.11 + 6 * explodedOffset;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
@@ -269,8 +269,28 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
         for (let i = 1; i < face.points.length - 1; i++) indices.push(0, i, i + 1);
         const meshGeometry = new THREE.BufferGeometry();
         meshGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        // Project texture coordinates onto the actual roof plane instead of the
+        // horizontal plan. This keeps tile/rib scale consistent on sloped and hip faces.
         const uv: number[] = [];
-        face.points.forEach(p => { uv.push(p.x / (cover === 'profile' ? 0.45 : 1.2), p.y / (cover === 'metal' ? 0.7 : 1.2)); });
+        const origin = point(face.points[0]);
+        const axisU = new THREE.Vector3().subVectors(point(face.points[1]), origin).normalize();
+        let axisV = new THREE.Vector3();
+        for (let i = 2; i < face.points.length; i++) {
+          const candidate = new THREE.Vector3().subVectors(point(face.points[i]), origin);
+          candidate.addScaledVector(axisU, -candidate.dot(axisU));
+          if (candidate.lengthSq() > 1e-8) { axisV = candidate.normalize(); break; }
+        }
+        const textureSpan: Record<NonNullable<Props['cover']>, [number, number]> = {
+          metal: [1.6, 2.8],
+          profile: [2.88, 3.0],
+          shingle: [2.4, 2.4],
+          membrane: [6.0, 6.0],
+        };
+        const [spanU, spanV] = textureSpan[cover];
+        face.points.forEach(p => {
+          const delta = new THREE.Vector3().subVectors(point(p), origin);
+          uv.push(delta.dot(axisU) / spanU, delta.dot(axisV) / spanV);
+        });
         meshGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
         meshGeometry.setIndex(indices);
         meshGeometry.computeVertexNormals();
@@ -390,7 +410,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
       const count = Math.max(3, Math.min(50, Math.ceil(project.length / 0.6) + 1));
       const raised = (x: number, y: number): Point3 => {
         const p = roofPoint(x, y);
-        return { ...p, z: p.z + 0.04 };
+        return { ...p, z: p.z + 0.02 };
       };
       for (let i = 0; i < count; i++) {
         const x = x0Frame + (x1Frame - x0Frame) * i / (count - 1);
