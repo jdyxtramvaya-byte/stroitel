@@ -49,7 +49,7 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
     <linearGradient id="bpFaceB" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stopColor="#b7ccd8"/><stop offset="1" stopColor="#7896a7"/>
     </linearGradient>
-    <clipPath id="bpDrawingClip"><rect x="55" y="88" width="650" height="310" rx="1"/></clipPath>
+    <clipPath id="bpDrawingClip"><rect x="45" y="80" width="670" height="320" rx="1"/></clipPath>
     <marker id="bpArrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
       <path d="M0,0 L6,3 L0,6 z" fill="#506c7b"/>
     </marker>
@@ -57,7 +57,7 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
 
   const scalePlan = Math.min(500 / Math.max(L, 1), 240 / Math.max(W, 1));
   const planLeft = (760 - L * scalePlan) / 2;
-  const planTop = 220 - W * scalePlan / 2;
+  const planTop = 230 - W * scalePlan / 2;
   const planPoint = (p: Point3) => ({ x: planLeft + (p.x + project.overhang) * scalePlan, y: planTop + (p.y + project.overhang) * scalePlan });
   const project3D = (p: Point3) => {
     const s = Math.min(300 / Math.max(L + W, 1), 190 / Math.max(0.34 * (L + W) + 1.35 * geometry.rise, 1));
