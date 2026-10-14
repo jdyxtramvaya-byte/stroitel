@@ -184,3 +184,8 @@
 .roof-blueprint .bp-dim text{fill:#263f4b;font-size:9px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
 .roof-blueprint .bp-note{fill:#536b77;font-size:8px;letter-spacing:.8px}
 .roof-blueprint .bp-face-label{fill:#243f4c;font-size:8px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:2px;stroke-linejoin:round}
+
+.roof-blueprint .bp-dim-label{fill:#263f4b;font-size:9px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+.roof-blueprint.bp-view-elevation,.roof-blueprint.bp-view-section,.roof-blueprint.bp-view-frame{background:#fff}
+.roof-blueprint .bp-structure{stroke:#9a6339;stroke-width:1.8;fill:none;stroke-linejoin:round}
+.roof-blueprint .bp-hidden-line{stroke:#8c9ba3;stroke-width:.8;stroke-dasharray:4 3;fill:none}
