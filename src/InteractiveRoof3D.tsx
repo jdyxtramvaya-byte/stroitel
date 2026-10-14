@@ -224,19 +224,18 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     deckLayer.name = 'roof-deck-layer';
     const insulationLayer = new THREE.Group();
     insulationLayer.name = 'roof-insulation-layer';
-    // Keep the roof build-up ordered even when assembled: insulation/deck/membrane
-    // stay below the timber layers, and the outer covering sits above the battens.
-    // Exploded spacing is added on top of these physical offsets.
+    // In assembled mode use a compact, physically ordered roof build-up.
+    // Exploded mode separates each layer by a controlled 18 cm increment instead
+    // of shifting the whole stack by several metres.
     const separation = exploded ? explodedSpacing : 0;
-    insulationLayer.position.y = 0.7 * separation;
-    deckLayer.position.y = 1.1 * separation;
-    membraneLayer.position.y = 1.5 * separation;
-    counterBattenLayer.position.y = 1.9 * separation;
-    // Leave enough clearance for the 75 mm counter-batten and 90 mm batten to meet
-    // as timber layers rather than visibly intersecting each other.
-    battenLayer.position.y = 0.15 + 2.3 * separation;
-    // Keep the opaque roof skin above the highest batten surface in assembled mode.
-    surfaceLayer.position.y = 0.37 + 2.7 * separation;
+    const explodedOffset = 0.18 * separation;
+    insulationLayer.position.y = 0.7 * separation * (exploded ? 1 : 0);
+    deckLayer.position.y = 1.1 * separation * (exploded ? 1 : 0);
+    membraneLayer.position.y = 1.5 * separation * (exploded ? 1 : 0);
+    counterBattenLayer.position.y = 1.9 * separation * (exploded ? 1 : 0);
+    // Timber sits directly above the counter-battens; the skin covers the battens.
+    battenLayer.position.y = 0.15 + (exploded ? 4 * explodedOffset : 0);
+    surfaceLayer.position.y = 0.37 + (exploded ? 5 * explodedOffset : 0);
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
