@@ -518,13 +518,13 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
 
     // Roof fixtures are rendered as separate visible objects above the covering.
     // Their plan coordinates are measured from the building's near-left corner.
-    const fixtureBox = (w: number, h: number, d: number, color: string, position: THREE.Vector3, rotationX = 0, roughness = 0.72) => {
+    const fixtureBox = (w: number, h: number, d: number, color: string, position: THREE.Vector3, rotationX = 0, roughness = 0.72, rotationZ = 0) => {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(w, h, d),
         new THREE.MeshStandardMaterial({ color, roughness, metalness: color === '#26343a' ? 0.42 : 0.04 })
       );
       mesh.position.copy(position);
-      mesh.rotation.x = rotationX;
+      mesh.rotation.set(rotationX, 0, rotationZ);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       group.add(mesh);
@@ -539,15 +539,19 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
       const before = roofPoint(x, Math.max(-project.overhang, y - 0.05));
       const after = roofPoint(x, Math.min(project.width + project.overhang, y + 0.05));
       const slope = (after.z - before.z) / Math.max(0.1, Math.min(project.width + project.overhang, y + 0.05) - Math.max(-project.overhang, y - 0.05));
+      const beforeX = roofPoint(Math.max(-project.overhang, x - 0.05), y);
+      const afterX = roofPoint(Math.min(project.length + project.overhang, x + 0.05), y);
+      const slopeX = (afterX.z - beforeX.z) / Math.max(0.1, Math.min(project.length + project.overhang, x + 0.05) - Math.max(-project.overhang, x - 0.05));
       const roofAngle = -Math.atan(slope);
+      const roofAngleZ = Math.atan(slopeX);
       const w = Math.max(0.15, Math.min(3, accessory.width));
       const d = Math.max(0.15, Math.min(3, accessory.depth));
       const h = Math.max(0.15, Math.min(3, accessory.height));
       if (accessory.type === 'skylight') {
         // A raised frame and dark glass, aligned with the local roof slope.
-        fixtureBox(w, 0.09, d, '#d8e1e5', new THREE.Vector3(base.x, base.y + 0.035, base.z), roofAngle, 0.42);
-        fixtureBox(Math.max(0.1, w - 0.12), 0.025, Math.max(0.1, d - 0.12), '#315c70', new THREE.Vector3(base.x, base.y + 0.09, base.z), roofAngle, 0.22);
-        fixtureBox(Math.max(0.06, w - 0.16), 0.018, 0.035, '#e8eef0', new THREE.Vector3(base.x, base.y + 0.105, base.z), roofAngle, 0.3);
+        fixtureBox(w, 0.09, d, '#d8e1e5', new THREE.Vector3(base.x, base.y + 0.035, base.z), roofAngle, 0.42, roofAngleZ);
+        fixtureBox(Math.max(0.1, w - 0.12), 0.025, Math.max(0.1, d - 0.12), '#315c70', new THREE.Vector3(base.x, base.y + 0.09, base.z), roofAngle, 0.22, roofAngleZ);
+        fixtureBox(Math.max(0.06, w - 0.16), 0.018, 0.035, '#e8eef0', new THREE.Vector3(base.x, base.y + 0.105, base.z), roofAngle, 0.3, roofAngleZ);
       } else if (accessory.type === 'vent') {
         const radius = w / 2;
         const tube = new THREE.Mesh(
@@ -567,7 +571,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
       } else {
         const isChimney = accessory.type === 'chimney';
         const bodyColor = isChimney ? '#a85f4d' : '#929fa4';
-        fixtureBox(w + 0.16, 0.06, d + 0.16, '#26343a', new THREE.Vector3(base.x, base.y + 0.025, base.z), roofAngle, 0.48);
+        fixtureBox(w + 0.16, 0.06, d + 0.16, '#26343a', new THREE.Vector3(base.x, base.y + 0.025, base.z), roofAngle, 0.48, roofAngleZ);
         fixtureBox(w, h, d, bodyColor, new THREE.Vector3(base.x, base.y + h / 2, base.z), 0, 0.86);
         if (isChimney) {
           fixtureBox(w + 0.1, 0.07, d + 0.1, '#4b5559', new THREE.Vector3(base.x, base.y + h + 0.035, base.z), 0, 0.55);
