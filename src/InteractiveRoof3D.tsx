@@ -235,7 +235,8 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     // Leave enough clearance for the 75 mm counter-batten and 90 mm batten to meet
     // as timber layers rather than visibly intersecting each other.
     battenLayer.position.y = 0.15 + 2.3 * separation;
-    surfaceLayer.position.y = 0.32 + 2.7 * separation;
+    // Keep the opaque roof skin above the highest batten surface in assembled mode.
+    surfaceLayer.position.y = 0.37 + 2.7 * separation;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
