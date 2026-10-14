@@ -200,12 +200,14 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     insulationLayer.name = 'roof-insulation-layer';
     // Keep layer separation adjustable while preserving the assembled position at zero.
     const separation = exploded ? explodedSpacing : 0;
-    surfaceLayer.position.y = 1.55 * separation;
-    battenLayer.position.y = 0.9 * separation;
-    counterBattenLayer.position.y = 0.42 * separation;
-    membraneLayer.position.y = -0.12 * separation;
-    deckLayer.position.y = -0.43 * separation;
-    insulationLayer.position.y = -0.88 * separation;
+    // Explode every layer upward from the building, never down into the walls.
+    // Keep the lowest layer above the eaves even with the layer's own negative offset.
+    insulationLayer.position.y = 0.7 * separation;
+    deckLayer.position.y = 1.1 * separation;
+    membraneLayer.position.y = 1.5 * separation;
+    counterBattenLayer.position.y = 1.9 * separation;
+    battenLayer.position.y = 2.3 * separation;
+    surfaceLayer.position.y = 2.7 * separation;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
