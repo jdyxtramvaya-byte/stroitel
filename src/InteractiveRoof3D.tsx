@@ -79,6 +79,20 @@ function makeCoverTexture(kind: NonNullable<Props['cover']>, color: string) {
     ctx.strokeStyle = shade(color, .8); ctx.lineWidth = 2;
     for (let y = 0; y <= 512; y += 64) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke(); }
   }
+  // Fine, low-contrast surface grain prevents the covering from looking like flat plastic.
+  // Use a deterministic pattern so the texture stays stable between rebuilds.
+  let seed = 7319;
+  const random = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+  for (let i = 0; i < 2600; i++) {
+    const x = Math.floor(random() * 512);
+    const y = Math.floor(random() * 512);
+    const light = random() > 0.52;
+    ctx.fillStyle = light ? 'rgba(255,255,255,0.045)' : 'rgba(0,0,0,0.055)';
+    ctx.fillRect(x, y, 1 + Math.floor(random() * 2), 1);
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -115,6 +129,8 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     renderer.setClearColor('#edf2f4');
@@ -134,6 +150,15 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     scene.add(new THREE.HemisphereLight('#ffffff', '#7f929a', 2.1));
     const key = new THREE.DirectionalLight('#ffffff', 3.2);
     key.position.set(8, 14, 10);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.near = 0.5;
+    key.shadow.camera.far = 80;
+    key.shadow.camera.left = -25;
+    key.shadow.camera.right = 25;
+    key.shadow.camera.top = 25;
+    key.shadow.camera.bottom = -25;
+    key.shadow.bias = -0.00025;
     scene.add(key);
     const fill = new THREE.DirectionalLight('#d9e8f0', 1.1);
     fill.position.set(-10, 7, -8);
@@ -227,6 +252,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     group.add(walls);
 
     if (showSurface) {
+      // Build one shared texture per model instead of allocating a full canvas texture
+      // for every roof face. The UVs are in world-like units, so seams remain consistent.
+      const coverTexture = makeCoverTexture(cover, coverColor);
       geometry.faces.forEach((face, index) => {
         const vertices: number[] = [];
         face.points.forEach(p => {
@@ -242,12 +270,11 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         meshGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
         meshGeometry.setIndex(indices);
         meshGeometry.computeVertexNormals();
-        const coverTexture = makeCoverTexture(cover, coverColor);
         const mesh = new THREE.Mesh(meshGeometry, new THREE.MeshStandardMaterial({
           color: '#ffffff',
           map: coverTexture || undefined,
-          roughness: cover === 'metal' || cover === 'profile' ? 0.36 : 0.86,
-          metalness: cover === 'metal' || cover === 'profile' ? 0.38 : 0.015,
+          roughness: cover === 'metal' ? 0.29 : cover === 'profile' ? 0.34 : cover === 'shingle' ? 0.94 : 0.88,
+          metalness: cover === 'metal' ? 0.52 : cover === 'profile' ? 0.42 : 0.01,
           side: THREE.DoubleSide,
           transparent: showFrame,
           opacity: showFrame ? 0.88 : 1,
