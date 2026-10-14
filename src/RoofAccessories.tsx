@@ -14,6 +14,7 @@ type Props = {
   accessories: RoofAccessory[];
   length: number;
   width: number;
+  overhang?: number;
   onChange: (items: RoofAccessory[]) => void;
 };
 const labels: Record<RoofAccessoryType, string> = {
@@ -44,7 +45,7 @@ const icons = {
   downpipe: Box,
 };
 const safe = (v: number, min: number, max: number) => Math.min(max, Math.max(min, Number.isFinite(v) ? v : min));
-export default function RoofAccessories({ accessories, length, width, onChange }: Props) {
+export default function RoofAccessories({ accessories, length, width, overhang = 0.5, onChange }: Props) {
   const add = (type: RoofAccessoryType) => {
     const d = defaults[type];
     onChange([...accessories, {
@@ -72,7 +73,7 @@ export default function RoofAccessories({ accessories, length, width, onChange }
         const Icon = icons[item.type];
         return <article className="roof-accessory-item" key={item.id}>
           <div className="roof-accessory-item-head"><span className="roof-accessory-icon"><Icon size={17}/></span><b>{labels[item.type]}</b><button type="button" className="roof-accessory-remove" aria-label={'Удалить: ' + labels[item.type]} onClick={() => onChange(accessories.filter(x => x.id !== item.id))}><Trash2 size={16}/></button></div>
-          {(['gutter', 'snowGuard'].includes(item.type) ? <p className="roof-accessories-note">Расчётная длина элемента: {(2 * (length + 2 * 0.5)).toFixed(1)} м по двум карнизам.</p> : null)}
+          {(['gutter', 'snowGuard'].includes(item.type) ? <p className="roof-accessories-note">Расчётная длина элемента: {(2 * (length + 2 * overhang)).toFixed(1)} м по двум карнизам.</p> : null)}
           <div className="roof-accessory-fields">
             {!(['gutter', 'snowGuard'].includes(item.type)) && <><label>X, вдоль здания<input type="number" min="0.25" max={Math.max(0.25, length - 0.25)} step="0.1" value={item.x} onChange={e => patch(item.id, { x: safe(Number(e.target.value), 0.25, Math.max(0.25, length - 0.25)) })}/></label>
             {item.type !== 'downpipe' && <label>Y, поперёк здания<input type="number" min="0.25" max={Math.max(0.25, width - 0.25)} step="0.1" value={item.y} onChange={e => patch(item.id, { y: safe(Number(e.target.value), 0.25, Math.max(0.25, width - 0.25)) })}/></label>}</>}
