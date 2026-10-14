@@ -364,15 +364,19 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         } else if (project.type === 'hip') {
           // Clip counter-battens to the actual hip planes. Full-width bars at the
           // roof ends protrude through the triangular hip faces and look like overlaps.
-          const halfWidth = (project.width + 2 * project.overhang) / 2;
-          // At each end the hip planes narrow to the ridge tip. Counter-battens
-          // must follow that outline instead of extending through the triangular faces.
+          // The roof height changes at the hip-plane intersections. Split each
+          // counter-batten there so it follows both sloping edges and the middle plane.
           const endDistance = Math.max(0, Math.min(x - x0Frame, x1Frame - x));
-          const inset = Math.max(0, halfWidth - endDistance);
-          const yStart = y0Frame + inset;
-          const yEnd = y1Frame - inset;
-          if (yEnd - yStart > 0.08) {
-            addBeam(raised(x, yStart), raised(x, yEnd), 0.075, supportMaterial, counterBattenLayer);
+          const yA = y0Frame + endDistance;
+          const yB = y1Frame - endDistance;
+          if (yA - y0Frame > 0.04) {
+            addBeam(raised(x, y0Frame), raised(x, yA), 0.075, supportMaterial, counterBattenLayer);
+          }
+          if (yB - yA > 0.04) {
+            addBeam(raised(x, yA), raised(x, yB), 0.075, supportMaterial, counterBattenLayer);
+          }
+          if (y1Frame - yB > 0.04) {
+            addBeam(raised(x, yB), raised(x, y1Frame), 0.075, supportMaterial, counterBattenLayer);
           }
         }
       }
@@ -399,15 +403,19 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         // hip roof instead of crossing the hip ends beyond the roof surface.
         for (let j = 1; j < battenCount; j++) {
           const y = y0Frame + (y1Frame - y0Frame) * j / battenCount;
-          const halfWidth = (project.width + 2 * project.overhang) / 2;
-          // The end hips taper to a point: horizontal battens are shortest at
-          // the eaves and grow toward the ridge line.
-          const edgeDistance = Math.min(y - y0Frame, y1Frame - y);
-          const inset = Math.max(0, halfWidth - edgeDistance);
+          // Follow the piecewise roof profile: rise over each hip end, continue
+          // along the main plane, then descend over the opposite hip end.
+          const inset = Math.min(y - y0Frame, y1Frame - y);
           const xStart = x0Frame + inset;
           const xEnd = x1Frame - inset;
-          if (xEnd - xStart > 0.08) {
+          if (xStart - x0Frame > 0.04) {
+            addBeam(raised(x0Frame, y), raised(xStart, y), 0.09, battenMaterial, battenLayer);
+          }
+          if (xEnd - xStart > 0.04) {
             addBeam(raised(xStart, y), raised(xEnd, y), 0.09, battenMaterial, battenLayer);
+          }
+          if (x1Frame - xEnd > 0.04) {
+            addBeam(raised(xEnd, y), raised(x1Frame, y), 0.09, battenMaterial, battenLayer);
           }
         }
       } else {
