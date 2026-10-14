@@ -281,8 +281,9 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
           roughness: cover === 'metal' ? 0.29 : cover === 'profile' ? 0.34 : cover === 'shingle' ? 0.94 : 0.88,
           metalness: cover === 'metal' ? 0.52 : cover === 'profile' ? 0.42 : 0.01,
           side: THREE.DoubleSide,
-          transparent: showFrame,
-          opacity: showFrame ? 0.88 : 1,
+          // The roof skin stays fully opaque; framing visibility is controlled separately.
+          transparent: false,
+          opacity: 1,
         }));
         mesh.castShadow = true;
         mesh.receiveShadow = true;
