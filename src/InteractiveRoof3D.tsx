@@ -207,7 +207,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     deckLayer.position.y = 1.1 * separation;
     membraneLayer.position.y = 1.5 * separation;
     counterBattenLayer.position.y = 1.9 * separation;
-    battenLayer.position.y = 0.12 + 2.3 * separation;
+    battenLayer.position.y = 0.14 + 2.3 * separation;
     surfaceLayer.position.y = 0.32 + 2.7 * separation;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
@@ -365,22 +365,14 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
           // Clip counter-battens to the actual hip planes. Full-width bars at the
           // roof ends protrude through the triangular hip faces and look like overlaps.
           const halfWidth = (project.width + 2 * project.overhang) / 2;
-          const inset = Math.max(0, Math.min(halfWidth, x - x0Frame, x1Frame - x));
+          // At each end the hip planes narrow to the ridge tip. Counter-battens
+          // must follow that outline instead of extending through the triangular faces.
+          const endDistance = Math.max(0, Math.min(x - x0Frame, x1Frame - x));
+          const inset = Math.max(0, halfWidth - endDistance);
           const yStart = y0Frame + inset;
           const yEnd = y1Frame - inset;
           if (yEnd - yStart > 0.08) {
-            const ridgeStart = Math.min(project.length + project.overhang - halfWidth, Math.max(-project.overhang + halfWidth, x));
-            const ridgeY = project.width / 2;
-            if (x < -project.overhang + halfWidth) {
-              addBeam(raised(x, yStart), raised(x, ridgeY), 0.075, supportMaterial, counterBattenLayer);
-              addBeam(raised(x, ridgeY), raised(x, yEnd), 0.075, supportMaterial, counterBattenLayer);
-            } else if (x > project.length + project.overhang - halfWidth) {
-              addBeam(raised(x, yStart), raised(x, ridgeY), 0.075, supportMaterial, counterBattenLayer);
-              addBeam(raised(x, ridgeY), raised(x, yEnd), 0.075, supportMaterial, counterBattenLayer);
-            } else {
-              addBeam(raised(x, yStart), raised(x, ridgeY), 0.075, supportMaterial, counterBattenLayer);
-              addBeam(raised(x, ridgeY), raised(x, yEnd), 0.075, supportMaterial, counterBattenLayer);
-            }
+            addBeam(raised(x, yStart), raised(x, yEnd), 0.075, supportMaterial, counterBattenLayer);
           }
         }
       }
@@ -407,7 +399,11 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         // hip roof instead of crossing the hip ends beyond the roof surface.
         for (let j = 1; j < battenCount; j++) {
           const y = y0Frame + (y1Frame - y0Frame) * j / battenCount;
-          const inset = Math.min(y - y0Frame, y1Frame - y);
+          const halfWidth = (project.width + 2 * project.overhang) / 2;
+          // The end hips taper to a point: horizontal battens are shortest at
+          // the eaves and grow toward the ridge line.
+          const edgeDistance = Math.min(y - y0Frame, y1Frame - y);
+          const inset = Math.max(0, halfWidth - edgeDistance);
           const xStart = x0Frame + inset;
           const xEnd = x1Frame - inset;
           if (xEnd - xStart > 0.08) {
