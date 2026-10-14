@@ -176,3 +176,11 @@
   .roof-accessory-add-btn { min-height: 46px; padding: 9px; font-size: 11px; }
   .roof-accessory-list { grid-template-columns: 1fr; }
 }
+
+
+/* Engineering drawing line hierarchy and dimension conventions */
+.roof-blueprint .bp-dim .bp-dimension-line{stroke:#344e5b;stroke-width:.85;fill:none;marker-start:url(#bpArrow);marker-end:url(#bpArrow)}
+.roof-blueprint .bp-dim .bp-extension{stroke:#71838d;stroke-width:.65;fill:none;marker-start:none;marker-end:none}
+.roof-blueprint .bp-dim text{fill:#263f4b;font-size:9px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+.roof-blueprint .bp-note{fill:#536b77;font-size:8px;letter-spacing:.8px}
+.roof-blueprint .bp-face-label{fill:#243f4c;font-size:8px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:2px;stroke-linejoin:round}
