@@ -13,14 +13,16 @@ const names: Record<RoofType, string> = {
 const fmt = (n: number) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Number.isFinite(n) ? n : 0);
 const pathOf = (points: { x: number; y: number }[]) => points.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ' Z';
 
-function Dimension({ x1, y1, x2, y2, label, vertical = false }: {
+function Dimension({ x1, y1, x2, y2, label, vertical = false, ext1, ext2 }: {
   x1: number; y1: number; x2: number; y2: number; label: string; vertical?: boolean;
+  ext1?: { x: number; y: number }; ext2?: { x: number; y: number };
 }) {
   const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
   return <g className="bp-dim">
-    <line x1={x1} y1={y1} x2={x2} y2={y2}/>
-    <path d={`M ${x1 - 4} ${y1 + 4} l 8 -8 M ${x2 - 4} ${y2 + 4} l 8 -8`}/>
-    <text x={mx} y={my - 7} textAnchor="middle" transform={vertical ? `rotate(-90 ${mx} ${my})` : undefined}>{label}</text>
+    {ext1 && <line className="bp-extension" x1={ext1.x} y1={ext1.y} x2={x1} y2={y1}/>}
+    {ext2 && <line className="bp-extension" x1={ext2.x} y1={ext2.y} x2={x2} y2={y2}/>}
+    <line className="bp-dimension-line" x1={x1} y1={y1} x2={x2} y2={y2}/>
+    <text x={mx} y={my - 6} textAnchor="middle" transform={vertical ? `rotate(-90 ${mx} ${my})` : undefined}>{label}</text>
   </g>;
 }
 
@@ -65,7 +67,7 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
   };
   const drawingBorder = <g>
     <rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill="#fff" stroke="#9eacb5" strokeWidth="1.2"/>
-    <rect x={frame.x + 7} y={frame.y + 7} width={frame.w - 14} height={frame.h - 14} fill="url(#bpGrid)" stroke="#d8e0e5"/>
+    <rect x={frame.x + 7} y={frame.y + 7} width={frame.w - 14} height={frame.h - 14} fill="#fff" stroke="#d8e0e5"/>
     <rect x="490" y="414" width="224" height="42" fill="#fff" stroke="#9eacb5"/>
     <line x1="490" y1="435" x2="714" y2="435" stroke="#c5cfd5"/>
     <line x1="620" y1="414" x2="620" y2="456" stroke="#c5cfd5"/>
@@ -103,8 +105,8 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
     {roofType === 'shed' && <g stroke="#173f55" strokeWidth="1.7" fill="none">{[0.28,0.5,0.72].map((t,i)=><path key={i} d={`M ${planLeft + L*scalePlan*t} ${planTop + 22} l 0 22 l -4 -5 m 4 5 l 4 -5`}/>)}</g>}
     {roofType === 'flat' && <g stroke="#547786" strokeWidth="1.5" fill="none">{[0.25,0.5,0.75].map((t,i)=><path key={i} d={`M ${planLeft + L*scalePlan*t} ${planTop + W*scalePlan*0.35} l 0 20 l -4 -5 m 4 5 l 4 -5`}/>)}</g>}
     {geometry.faces.map(f => <text key={'label-'+f.id} x={f.points.map(planPoint).reduce((s,p)=>s+p.x,0)/f.points.length} y={f.points.map(planPoint).reduce((s,p)=>s+p.y,0)/f.points.length} textAnchor="middle" className="bp-face-label">{f.label}</text>)}
-    <Dimension x1={planLeft} y1={planTop - 25} x2={planLeft + L * scalePlan} y2={planTop - 25} label={fmt(L) + ' м · со свесами'}/>
-    <Dimension x1={planLeft - 25} y1={planTop} x2={planLeft - 25} y2={planTop + W * scalePlan} label={fmt(W) + ' м · со свесами'} vertical/>
+    <Dimension x1={planLeft} y1={planTop - 28} x2={planLeft + L * scalePlan} y2={planTop - 28} ext1={{x:planLeft,y:planTop}} ext2={{x:planLeft + L * scalePlan,y:planTop}} label={fmt(L) + ' м'}/>
+    <Dimension x1={planLeft - 30} y1={planTop} x2={planLeft - 30} y2={planTop + W * scalePlan} ext1={{x:planLeft,y:planTop}} ext2={{x:planLeft,y:planTop + W * scalePlan}} label={fmt(W) + ' м'} vertical/>
     <text x="380" y="395" textAnchor="middle" className="bp-note">ПЛАН СКАТОВ · КОНЁК / РЁБРА / СВЕСЫ</text>
   </g>;
 
@@ -120,8 +122,8 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
     <line x1={ex-24} y1={ground} x2={ex+Math.max(L,W)*elevScale+24} y2={ground} stroke="#536d7a" strokeWidth="1.5"/>
     <path d={pathOf(elevationPoints)} fill="none" stroke="#294d60" strokeWidth="3" strokeLinejoin="round"/>
     {roofType !== 'flat' && elevationPoints.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#294d60"/>)}
-    <Dimension x1={ex} y1={ground+24} x2={ex+Math.max(L,W)*elevScale} y2={ground+24} label={fmt(Math.max(L,W))+' м'}/>
-    <Dimension x1={ex+Math.max(L,W)*elevScale+28} y1={ground} x2={ex+Math.max(L,W)*elevScale+28} y2={ground-geometry.rise*elevScale} label={fmt(geometry.rise)+' м'} vertical/>
+    <Dimension x1={ex} y1={ground+24} x2={ex+Math.max(L,W)*elevScale} y2={ground+24} ext1={{x:ex,y:ground}} ext2={{x:ex+Math.max(L,W)*elevScale,y:ground}} label={fmt(Math.max(L,W))+' м'}/>
+    <Dimension x1={ex+Math.max(L,W)*elevScale+28} y1={ground} x2={ex+Math.max(L,W)*elevScale+28} y2={ground-geometry.rise*elevScale} ext1={{x:ex+Math.max(L,W)*elevScale,y:ground}} ext2={{x:ex+Math.max(L,W)*elevScale,y:ground-geometry.rise*elevScale}} label={fmt(geometry.rise)+' м'} vertical/>
     <text x="380" y="405" textAnchor="middle" className="bp-note">ПРОФИЛЬ КРОВЛИ · УКЛОН {fmt(project.pitch)}°</text>
   </g>;
 
@@ -139,7 +141,7 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
         return <line key={i} x1={x} y1={sy} x2={x} y2={y} stroke="#b07843" strokeWidth="2.4"/>;
       })}
     </> : roofType === 'shed' ? <path d={`M ${sx} ${sy} L ${sx+W*sectionScale} ${sy-geometry.rise*sectionScale}`} stroke="#294d60" strokeWidth="3"/> : <line x1={sx} y1={sy-2} x2={sx+W*sectionScale} y2={sy-2} stroke="#294d60" strokeWidth="3"/>}
-    <Dimension x1={sx} y1={sy+35} x2={sx+W*sectionScale} y2={sy+35} label={fmt(W)+' м'}/>
+    <Dimension x1={sx} y1={sy+35} x2={sx+W*sectionScale} y2={sy+35} ext1={{x:sx,y:sy+8}} ext2={{x:sx+W*sectionScale,y:sy+8}} label={fmt(W)+' м'}/>
     <text x="380" y="405" textAnchor="middle" className="bp-note">ПОПЕРЕЧНЫЙ РАЗРЕЗ · СХЕМА НЕСУЩИХ ЭЛЕМЕНТОВ</text>
   </g>;
 
