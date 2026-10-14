@@ -74,13 +74,14 @@ export default function RoofAccessories({ accessories, length, width, onChange }
           <div className="roof-accessory-item-head"><span className="roof-accessory-icon"><Icon size={17}/></span><b>{labels[item.type]}</b><button type="button" className="roof-accessory-remove" aria-label={'Удалить: ' + labels[item.type]} onClick={() => onChange(accessories.filter(x => x.id !== item.id))}><Trash2 size={16}/></button></div>
           {(['gutter', 'snowGuard'].includes(item.type) ? <p className="roof-accessories-note">Расчётная длина элемента: {(2 * (length + 2 * 0.5)).toFixed(1)} м по двум карнизам.</p> : null)}
           <div className="roof-accessory-fields">
-            {!(['gutter', 'snowGuard', 'downpipe'].includes(item.type)) && <><label>X, вдоль здания<input type="number" min="0.25" max={Math.max(0.25, length - 0.25)} step="0.1" value={item.x} onChange={e => patch(item.id, { x: safe(Number(e.target.value), 0.25, Math.max(0.25, length - 0.25)) })}/></label>
-            <label>Y, поперёк здания<input type="number" min="0.25" max={Math.max(0.25, width - 0.25)} step="0.1" value={item.y} onChange={e => patch(item.id, { y: safe(Number(e.target.value), 0.25, Math.max(0.25, width - 0.25)) })}/></label></>}
+            {!(['gutter', 'snowGuard'].includes(item.type)) && <><label>X, вдоль здания<input type="number" min="0.25" max={Math.max(0.25, length - 0.25)} step="0.1" value={item.x} onChange={e => patch(item.id, { x: safe(Number(e.target.value), 0.25, Math.max(0.25, length - 0.25)) })}/></label>
+            {item.type !== 'downpipe' && <label>Y, поперёк здания<input type="number" min="0.25" max={Math.max(0.25, width - 0.25)} step="0.1" value={item.y} onChange={e => patch(item.id, { y: safe(Number(e.target.value), 0.25, Math.max(0.25, width - 0.25)) })}/></label>}</>}
             {!(['gutter', 'snowGuard', 'downpipe'].includes(item.type)) && <><label>Ширина, м<input type="number" min="0.15" max="3" step="0.05" value={item.width} onChange={e => patch(item.id, { width: safe(Number(e.target.value), 0.15, 3) })}/></label>
             <label>{item.type === 'skylight' ? 'Длина по скату, м' : 'Глубина, м'}<input type="number" min="0.15" max="3" step="0.05" value={item.depth} onChange={e => patch(item.id, { depth: safe(Number(e.target.value), 0.15, 3) })}/></label>
             {item.type !== 'skylight' && <label>Высота над кровлей, м<input type="number" min="0.15" max="3" step="0.05" value={item.height} onChange={e => patch(item.id, { height: safe(Number(e.target.value), 0.15, 3) })}/></label>}</>}
           </div>
-          {!(['gutter', 'snowGuard', 'downpipe'].includes(item.type)) && <p className="roof-accessory-coordinates">Положение: {item.x.toFixed(2)} м × {item.y.toFixed(2)} м</p>}
+          {item.type === 'downpipe' && <label className="roof-accessory-side">Сторона карниза<select value={item.y < width / 2 ? 'near' : 'far'} onChange={e => patch(item.id, { y: e.target.value === 'near' ? 0.25 : Math.max(0.25, width - 0.25) })}><option value="near">Ближняя</option><option value="far">Дальняя</option></select></label>}
+          {!(['gutter', 'snowGuard'].includes(item.type)) && <p className="roof-accessory-coordinates">Положение: {item.x.toFixed(2)} м{item.type !== 'downpipe' ? ' × ' + item.y.toFixed(2) + ' м' : ''}</p>}
         </article>;
       })}</div>}
     <p className="roof-accessories-note">Положение задаётся координатами, а не перетаскиванием мышью. Проверяйте расстояния до конька, ендов, стропил и противопожарные отступы отдельно.</p>
