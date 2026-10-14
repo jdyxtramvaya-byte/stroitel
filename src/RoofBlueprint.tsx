@@ -89,11 +89,22 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
   </g>;
 
   const plan = <g>
-    {geometry.faces.map((f, i) => <path key={f.id} d={pathOf(f.points.map(planPoint))} fill="url(#bpCoverPattern)" fillOpacity=".96" stroke="#38586a" strokeWidth="1.6" strokeLinejoin="round"/>)}
+    {geometry.faces.map(f => <path key={f.id} d={pathOf(f.points.map(planPoint))} fill="url(#bpCoverPattern)" fillOpacity=".9" stroke="#38586a" strokeWidth="1.35" strokeLinejoin="round"/>)}
+    <rect x={planLeft + project.overhang * scalePlan} y={planTop + project.overhang * scalePlan} width={Math.max(0, L - 2 * project.overhang) * scalePlan} height={Math.max(0, W - 2 * project.overhang) * scalePlan} fill="none" stroke="#314b59" strokeWidth="1.2" strokeDasharray="5 4"/>
+    {roofType === 'gable' && <g stroke="#173f55" strokeWidth="2.4" fill="none">
+      <line x1={planLeft} y1={planTop + W * scalePlan / 2} x2={planLeft + L * scalePlan} y2={planTop + W * scalePlan / 2}/>
+    </g>}
+    {roofType === 'hip' && <g stroke="#173f55" strokeWidth="2.2" fill="none" strokeLinejoin="round">
+      {L >= W
+        ? <><line x1={planLeft + W * scalePlan / 2} y1={planTop + W * scalePlan / 2} x2={planLeft + (L - W / 2) * scalePlan} y2={planTop + W * scalePlan / 2}/><line x1={planLeft} y1={planTop} x2={planLeft + W * scalePlan / 2} y2={planTop + W * scalePlan / 2}/><line x1={planLeft} y1={planTop + W * scalePlan} x2={planLeft + W * scalePlan / 2} y2={planTop + W * scalePlan / 2}/><line x1={planLeft + L * scalePlan} y1={planTop} x2={planLeft + (L - W / 2) * scalePlan} y2={planTop + W * scalePlan / 2}/><line x1={planLeft + L * scalePlan} y1={planTop + W * scalePlan} x2={planLeft + (L - W / 2) * scalePlan} y2={planTop + W * scalePlan / 2}/></>
+        : <><line x1={planLeft + L * scalePlan / 2} y1={planTop + L * scalePlan / 2} x2={planLeft + L * scalePlan / 2} y2={planTop + (W - L / 2) * scalePlan}/><line x1={planLeft} y1={planTop} x2={planLeft + L * scalePlan / 2} y2={planTop + L * scalePlan / 2}/><line x1={planLeft + L * scalePlan} y1={planTop} x2={planLeft + L * scalePlan / 2} y2={planTop + L * scalePlan / 2}/><line x1={planLeft} y1={planTop + W * scalePlan} x2={planLeft + L * scalePlan / 2} y2={planTop + (W - L / 2) * scalePlan}/><line x1={planLeft + L * scalePlan} y1={planTop + W * scalePlan} x2={planLeft + L * scalePlan / 2} y2={planTop + (W - L / 2) * scalePlan}/></>}
+    </g>}
+    {roofType === 'shed' && <g stroke="#173f55" strokeWidth="1.7" fill="none">{[0.28,0.5,0.72].map((t,i)=><path key={i} d={`M ${planLeft + L*scalePlan*t} ${planTop + 22} l 0 22 l -4 -5 m 4 5 l 4 -5`}/>)}</g>}
+    {roofType === 'flat' && <g stroke="#547786" strokeWidth="1.5" fill="none">{[0.25,0.5,0.75].map((t,i)=><path key={i} d={`M ${planLeft + L*scalePlan*t} ${planTop + W*scalePlan*0.35} l 0 20 l -4 -5 m 4 5 l 4 -5`}/>)}</g>}
     {geometry.faces.map(f => <text key={'label-'+f.id} x={f.points.map(planPoint).reduce((s,p)=>s+p.x,0)/f.points.length} y={f.points.map(planPoint).reduce((s,p)=>s+p.y,0)/f.points.length} textAnchor="middle" className="bp-face-label">{f.label}</text>)}
-    <Dimension x1={planLeft} y1={planTop - 25} x2={planLeft + L * scalePlan} y2={planTop - 25} label={fmt(L) + ' м'}/>
-    <Dimension x1={planLeft - 25} y1={planTop} x2={planLeft - 25} y2={planTop + W * scalePlan} label={fmt(W) + ' м'} vertical/>
-    <text x="380" y="395" textAnchor="middle" className="bp-note">ПЛАН СКАТОВ · СВЕСЫ УЧТЕНЫ</text>
+    <Dimension x1={planLeft} y1={planTop - 25} x2={planLeft + L * scalePlan} y2={planTop - 25} label={fmt(L) + ' м · со свесами'}/>
+    <Dimension x1={planLeft - 25} y1={planTop} x2={planLeft - 25} y2={planTop + W * scalePlan} label={fmt(W) + ' м · со свесами'} vertical/>
+    <text x="380" y="395" textAnchor="middle" className="bp-note">ПЛАН СКАТОВ · КОНЁК / РЁБРА / СВЕСЫ</text>
   </g>;
 
   const elevScale = Math.min(510 / Math.max(L, W, 1), 260 / Math.max(geometry.rise, 1));
