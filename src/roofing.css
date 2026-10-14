@@ -85,3 +85,17 @@
 .roof-frame-key b{color:#385746;margin-right:5px}
 .roof-webgl-host{border-radius:0 0 12px 12px}
 @media(max-width:720px){.roof-frame-key{font-size:9px;padding:8px 10px}}
+
+/* Automatic roof dimension summary */
+.roof-dimensions-panel{margin-top:13px;padding:16px;border:1px solid #dce5e9;border-radius:13px;background:linear-gradient(145deg,#fbfdfe,#f2f6f8)}
+.roof-dimensions-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.roof-dimensions-heading h3{margin:0;color:#263f4d;font-family:Manrope,sans-serif;font-size:14px;letter-spacing:-.25px}
+.roof-dimensions-heading p{margin:4px 0 0;color:#82919a;font-size:10px}
+.roof-dimensions-heading>span{padding:5px 7px;border:1px solid #dce5e9;border-radius:6px;color:#6c818d;font-size:8px;font-weight:800;letter-spacing:.7px;white-space:nowrap}
+.roof-dimensions-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.roof-dimensions-grid>div{min-width:0;padding:12px;background:#fff;border:1px solid #e4ebee;border-radius:9px}
+.roof-dimensions-grid small{display:block;min-height:27px;color:#7e8d95;font-size:9px;line-height:1.45}
+.roof-dimensions-grid b{display:block;margin-top:5px;color:#2b4b5a;font-family:Manrope,sans-serif;font-size:16px;letter-spacing:-.35px;overflow-wrap:anywhere}
+.roof-dimensions-note{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;color:#7b898f;font-size:9px;line-height:1.55}
+.roof-dimensions-note svg{flex:none;margin-top:1px;color:#658394}
+@media(max-width:700px){.roof-dimensions-panel{padding:12px}.roof-dimensions-heading{flex-direction:column;gap:8px}.roof-dimensions-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.roof-dimensions-grid>div{padding:10px}.roof-dimensions-grid small{font-size:9px;min-height:30px}.roof-dimensions-grid b{font-size:14px}.roof-dimensions-note{font-size:9px}}
