@@ -166,7 +166,13 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
     <line x1={sx} y1={sy+5} x2={sx} y2={sy+32} stroke="#71838d" strokeWidth=".65"/>
     <line x1={sx+W*sectionScale} y1={sy+5} x2={sx+W*sectionScale} y2={sy+32} stroke="#71838d" strokeWidth=".65"/>
     <text x={sx+W*sectionScale/2} y={sy+21} textAnchor="middle" className="bp-dim-label">{fmt(W)} м</text>
-    <text x="380" y="390" textAnchor="middle" className="bp-note">ПОПЕРЕЧНЫЙ РАЗРЕЗ · СХЕМА СТРОПИЛЬНОЙ СИСТЕМЫ</text>
+    {geometry.rise > 0.01 && <g>
+      <line x1={sx+W*sectionScale+25} y1={sy} x2={sx+W*sectionScale+25} y2={sectionPeak} stroke="#344e5b" strokeWidth=".85" markerStart="url(#bpArrow)" markerEnd="url(#bpArrow)"/>
+      <line x1={sx+W*sectionScale} y1={sy} x2={sx+W*sectionScale+30} y2={sy} stroke="#71838d" strokeWidth=".65"/>
+      <line x1={sx+W*sectionScale/2} y1={sectionPeak} x2={sx+W*sectionScale+30} y2={sectionPeak} stroke="#71838d" strokeWidth=".65"/>
+      <text x={sx+W*sectionScale+33} y={(sy+sectionPeak)/2} textAnchor="middle" className="bp-dim-label" transform={`rotate(-90 ${sx+W*sectionScale+33} ${(sy+sectionPeak)/2})`}>{fmt(geometry.rise)} м</text>
+    </g>}
+    <text x="380" y="390" textAnchor="middle" className="bp-note">ПОПЕРЕЧНЫЙ РАЗРЕЗ · ШИРИНА {fmt(W)} м · ПОДЪЁМ {fmt(geometry.rise)} м</text>
   </g>;
 
   const frameView = <g>
