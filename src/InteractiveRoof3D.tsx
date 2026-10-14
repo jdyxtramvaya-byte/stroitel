@@ -5,6 +5,71 @@ import { buildRoofGeometry, type RoofGeometryInput, type Point3 } from './roofGe
 
 type Props = { project: RoofGeometryInput; cover?: 'metal' | 'profile' | 'shingle' | 'membrane' };
 const clampCount = (n: number) => Math.max(2, Math.min(100, n));
+const defaultCoverColors: Record<NonNullable<Props['cover']>, string> = {
+  metal: '#536f82', profile: '#416b80', shingle: '#514b45', membrane: '#9aa7a3',
+};
+function makeCoverTexture(kind: NonNullable<Props['cover']>, color: string) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.fillStyle = color; ctx.fillRect(0, 0, 512, 512);
+  const shade = (hex: string, amount: number) => {
+    const c = new THREE.Color(hex);
+    c.multiplyScalar(amount);
+    return '#' + c.getHexString();
+  };
+  if (kind === 'metal') {
+    // Repeating metal-tile modules with raised transverse seams and shallow longitudinal ribs.
+    const moduleH = 64, moduleW = 128;
+    for (let y = 0; y < 512; y += moduleH) {
+      const grad = ctx.createLinearGradient(0, y, 0, y + moduleH);
+      grad.addColorStop(0, shade(color, 1.24)); grad.addColorStop(.13, shade(color, 1.08));
+      grad.addColorStop(.22, shade(color, .84)); grad.addColorStop(.34, shade(color, 1.05));
+      grad.addColorStop(.78, shade(color, .98)); grad.addColorStop(1, shade(color, .72));
+      ctx.fillStyle = grad; ctx.fillRect(0, y, 512, moduleH);
+      ctx.strokeStyle = shade(color, .63); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, y + moduleH - 2); ctx.lineTo(512, y + moduleH - 2); ctx.stroke();
+      for (let x = 0; x < 512; x += moduleW) {
+        ctx.strokeStyle = shade(color, 1.32); ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 3, y + 8); ctx.lineTo(x + 3, y + moduleH - 5); ctx.stroke();
+        ctx.strokeStyle = shade(color, .66); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x + moduleW - 3, y + 8); ctx.lineTo(x + moduleW - 3, y + moduleH - 3); ctx.stroke();
+      }
+    }
+  } else if (kind === 'profile') {
+    // Continuous trapezoidal corrugations along the full sheet length.
+    const pitch = 32;
+    for (let x = 0; x < 512; x += pitch) {
+      const grad = ctx.createLinearGradient(x, 0, x + pitch, 0);
+      grad.addColorStop(0, shade(color, .68)); grad.addColorStop(.22, shade(color, 1.12));
+      grad.addColorStop(.48, shade(color, 1.28)); grad.addColorStop(.78, shade(color, .94));
+      grad.addColorStop(1, shade(color, .63));
+      ctx.fillStyle = grad; ctx.fillRect(x, 0, pitch, 512);
+      ctx.strokeStyle = shade(color, .6); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + pitch - 1, 0); ctx.lineTo(x + pitch - 1, 512); ctx.stroke();
+    }
+  } else if (kind === 'shingle') {
+    const rowH = 48, tabW = 64;
+    for (let y = 0; y < 512; y += rowH) {
+      const offset = Math.floor(y / rowH) % 2 ? -tabW / 2 : 0;
+      for (let x = offset; x < 512; x += tabW) {
+        ctx.fillStyle = shade(color, .86 + ((Math.floor(x / tabW) + Math.floor(y / rowH)) % 3) * .09);
+        ctx.fillRect(x + 1, y + 1, tabW - 2, rowH - 2);
+        ctx.strokeStyle = shade(color, .62); ctx.lineWidth = 2;
+        ctx.strokeRect(x + 1, y + 1, tabW - 2, rowH - 2);
+      }
+    }
+  } else {
+    ctx.strokeStyle = shade(color, .8); ctx.lineWidth = 2;
+    for (let y = 0; y <= 512; y += 64) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke(); }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.anisotropy = 8;
+  return texture;
+}
 
 export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -20,7 +85,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   const [showSupports, setShowSupports] = useState(true);
   const [exploded, setExploded] = useState(false);
   const [explodedSpacing, setExplodedSpacing] = useState(1);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(false);\n  const [coverColor, setCoverColor] = useState(defaultCoverColors[cover]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -168,15 +233,20 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
         for (let i = 1; i < face.points.length - 1; i++) indices.push(0, i, i + 1);
         const meshGeometry = new THREE.BufferGeometry();
         meshGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        const uv: number[] = [];
+        face.points.forEach(p => { uv.push(p.x / (cover === 'profile' ? 0.45 : 1.2), p.y / (cover === 'metal' ? 0.7 : 1.2)); });
+        meshGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
         meshGeometry.setIndex(indices);
         meshGeometry.computeVertexNormals();
+        const coverTexture = makeCoverTexture(cover, coverColor);
         const mesh = new THREE.Mesh(meshGeometry, new THREE.MeshStandardMaterial({
-          color: cover === 'metal' ? ['#718896', '#8299a5', '#637d8b', '#9aabb4'][index % 4] : cover === 'profile' ? ['#7f98a3', '#93aab4', '#6f8995', '#a5b8c0'][index % 4] : cover === 'shingle' ? ['#5c5a57', '#706d68', '#4c4b49', '#858078'][index % 4] : ['#a9b8b5', '#bdc9c5', '#96a8a4', '#cbd4d0'][index % 4],
-          roughness: cover === 'metal' || cover === 'profile' ? 0.48 : 0.88,
-          metalness: cover === 'metal' || cover === 'profile' ? 0.32 : 0.02,
+          color: '#ffffff',
+          map: coverTexture || undefined,
+          roughness: cover === 'metal' || cover === 'profile' ? 0.36 : 0.86,
+          metalness: cover === 'metal' || cover === 'profile' ? 0.38 : 0.015,
           side: THREE.DoubleSide,
           transparent: showFrame,
-          opacity: showFrame ? 0.64 : 1,
+          opacity: showFrame ? 0.88 : 1,
         }));
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -380,7 +450,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     camera.updateProjectionMatrix();
     controls.target.set(0, -0.2, 0);
     controls.update();
-  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showDeck, showInsulation, showSupports, exploded, explodedSpacing, cover]);
+  }, [project.type, project.length, project.width, project.pitch, project.overhang, showSurface, showFrame, showBeams, showBattens, showCounterBattens, showMembrane, showDeck, showInsulation, showSupports, exploded, explodedSpacing, cover, coverColor]);
 
   const resetView = () => {
     const state = sceneRef.current;
@@ -395,6 +465,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
   return <div className="interactive-roof-wrap">
     <div className="roof-3d-toolbar">
       <label><input type="checkbox" checked={showSurface} onChange={e => setShowSurface(e.target.checked)}/> Покрытие</label>
+      <label className="roof-cover-color-control">Цвет покрытия <input type="color" value={coverColor} onChange={e => setCoverColor(e.target.value)} aria-label="Цвет кровельного покрытия"/></label>
       <label><input type="checkbox" checked={showFrame} onChange={e => setShowFrame(e.target.checked)}/> Контур</label>
       <label><input type="checkbox" checked={showBeams} onChange={e => setShowBeams(e.target.checked)}/> Стропила и балки</label>
       <label><input type="checkbox" checked={showBattens} onChange={e => setShowBattens(e.target.checked)}/> Обрешётка</label>
