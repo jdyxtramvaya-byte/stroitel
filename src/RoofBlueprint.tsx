@@ -1,6 +1,7 @@
 import React from 'react';
 import { buildRoofGeometry, type Point3, type RoofGeometryInput } from './roofGeometry';
 import InteractiveRoof3D from './InteractiveRoof3D';
+import type { RoofAccessory } from './RoofAccessories';
 
 export type RoofType = 'gable' | 'hip' | 'shed' | 'flat';
 export type RoofProject = RoofGeometryInput;
@@ -23,7 +24,7 @@ function Dimension({ x1, y1, x2, y2, label, vertical = false }: {
   </g>;
 }
 
-export default function RoofBlueprint({ project, view, cover = 'metal' }: { project: RoofProject; view: RoofView; cover?: 'metal' | 'profile' | 'shingle' | 'membrane' }) {
+export default function RoofBlueprint({ project, view, cover = 'metal', accessories = [] }: { project: RoofProject; view: RoofView; cover?: 'metal' | 'profile' | 'shingle' | 'membrane'; accessories?: RoofAccessory[] }) {
   const geometry = buildRoofGeometry(project);
   const { length: L, width: W } = geometry.footprint;
   const roofType = project.type;
@@ -148,7 +149,7 @@ export default function RoofBlueprint({ project, view, cover = 'metal' }: { proj
 
   const title = view === '3d' ? 'ОБЪЁМНАЯ МОДЕЛЬ' : view === 'plan' ? 'ПЛАН КРОВЛИ' : view === 'elevation' ? 'ФАСАД / ПРОФИЛЬ' : view === 'section' ? 'ПОПЕРЕЧНЫЙ РАЗРЕЗ' : 'СТРОПИЛЬНЫЙ КАРКАС';
   const drawing = view === '3d' ? roof3d : view === 'plan' ? plan : view === 'elevation' ? elevation : view === 'section' ? section : frameView;
-  if (view === '3d') return <InteractiveRoof3D project={project} cover={cover} />;
+  if (view === '3d') return <InteractiveRoof3D project={project} cover={cover} accessories={accessories} />;
   return <svg className={'roof-blueprint bp-view-' + view} viewBox="0 0 760 500" role="img" aria-label={title + ', ' + names[roofType]}>
     {baseDefs}
     {drawingBorder}
