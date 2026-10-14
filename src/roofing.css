@@ -124,3 +124,55 @@
 .roof-cover-color-control{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap}
 .roof-cover-color-control input[type="color"]{width:34px;height:30px;padding:2px;border:1px solid #b7c6bf;border-radius:8px;background:#fff;cursor:pointer}
 .roof-3d-toolbar .roof-cover-color-control{font-weight:600;color:#33483d}
+
+
+/* Roof fixture placement panel */
+.roof-accessories-panel {
+  margin: 22px 0;
+  padding: 22px;
+  border: 1px solid #dce5e9;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff, #f7fafb);
+  box-shadow: 0 8px 24px rgba(34, 58, 70, .045);
+}
+.roof-accessories-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.roof-accessories-heading h3 { margin: 5px 0 6px; color: #183744; font-size: 20px; letter-spacing: -.035em; }
+.roof-accessories-heading p { max-width: 650px; margin: 0; color: #71818a; font-size: 13px; line-height: 1.55; }
+.roof-accessories-count {
+  display: grid; place-items: center; min-width: 34px; height: 34px; padding: 0 8px;
+  border: 1px solid #d7e2e7; border-radius: 11px; color: #355765; background: #edf3f5; font-size: 13px; font-weight: 700;
+}
+.roof-accessory-add { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin-bottom: 14px; }
+.roof-accessory-add-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 10px 12px;
+  border: 1px solid #d9e4e8; border-radius: 12px; background: #fff; color: #294956; font: inherit; font-size: 12px; font-weight: 650; text-align: left; cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.roof-accessory-add-btn:hover { border-color: #8da9b5; background: #f0f6f8; transform: translateY(-1px); }
+.roof-accessory-add-btn svg:first-child { flex: 0 0 auto; color: #547987; }
+.roof-accessory-add-btn span { flex: 1; }
+.roof-accessory-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.roof-accessory-item { min-width: 0; padding: 15px; border: 1px solid #e0e8eb; border-radius: 14px; background: rgba(255,255,255,.85); }
+.roof-accessory-item-head { display: flex; align-items: center; gap: 9px; margin-bottom: 13px; color: #244653; font-size: 13px; }
+.roof-accessory-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; color: #4c7483; background: #eaf1f4; }
+.roof-accessory-remove { display: grid; place-items: center; width: 32px; height: 32px; margin-left: auto; border: 0; border-radius: 9px; color: #8b5a54; background: #fbefed; cursor: pointer; }
+.roof-accessory-remove:hover { background: #f6dfdc; }
+.roof-accessory-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.roof-accessory-fields label { display: flex; flex-direction: column; gap: 5px; min-width: 0; color: #778790; font-size: 11px; }
+.roof-accessory-fields input { box-sizing: border-box; width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #dbe4e8; border-radius: 9px; background: #fff; color: #213e4a; font: inherit; font-size: 13px; }
+.roof-accessory-fields input:focus { outline: 2px solid #bfd3dc; border-color: #8eaab6; }
+.roof-accessory-coordinates { margin: 10px 0 0; color: #73838b; font-size: 11px; }
+.roof-accessories-empty { padding: 16px; border: 1px dashed #cbd9df; border-radius: 12px; color: #71818a; background: #fbfdfe; font-size: 13px; line-height: 1.55; }
+.roof-accessories-note { margin: 15px 0 0; color: #8a7770; font-size: 11px; line-height: 1.55; }
+@media (max-width: 760px) {
+  .roof-accessories-panel { padding: 15px; border-radius: 15px; }
+  .roof-accessory-add { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .roof-accessory-add-btn { min-height: 46px; padding: 9px; font-size: 11px; }
+  .roof-accessory-list { grid-template-columns: 1fr; }
+}
