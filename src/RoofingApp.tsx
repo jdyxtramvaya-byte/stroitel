@@ -75,7 +75,7 @@ function calc(p:Project) {
  ];
  const count = (type: RoofAccessory['type']) => (p.accessories || []).filter(a => a.type === type).length;
  const eaveRun = 2 * eaveLength;
- const extras: Work[] = [];
+ const extras: Omit<Work, 'id'>[] = [];
  if (count('gutter') > 0) {
   extras.push(
    {name:'Водосточный желоб',qty:eaveRun,unit:'пог. м',price:650,group:'material'},
