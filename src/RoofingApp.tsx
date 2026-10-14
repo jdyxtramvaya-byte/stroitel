@@ -73,6 +73,47 @@ function calc(p:Project) {
   {name:'Монтаж обрешётки',qty:battens,unit:'пог. м',price:25,group:'work' as const},
   {name:'Монтаж мембраны',qty:baseArea,unit:'м²',price:110,group:'work' as const},
  ];
+ const count = (type: RoofAccessory['type']) => (p.accessories || []).filter(a => a.type === type).length;
+ const eaveRun = 2 * eaveLength;
+ const extras: Work[] = [];
+ if (count('gutter') > 0) {
+  extras.push(
+   {name:'Водосточный желоб',qty:eaveRun,unit:'пог. м',price:650,group:'material'},
+   {name:'Кронштейны водостока',qty:Math.ceil(eaveRun/0.6),unit:'шт.',price:180,group:'material'},
+   {name:'Соединители и заглушки водостока',qty:Math.max(4,Math.ceil(eaveRun/3)),unit:'компл.',price:250,group:'material'},
+   {name:'Монтаж водосточного желоба',qty:eaveRun,unit:'пог. м',price:280,group:'work'}
+  );
+ }
+ if (count('downpipe') > 0) {
+  const downpipeLength = count('downpipe') * 2.5;
+  extras.push(
+   {name:'Водосточная труба',qty:downpipeLength,unit:'пог. м',price:600,group:'material'},
+   {name:'Крепления водосточной трубы',qty:count('downpipe')*4,unit:'шт.',price:120,group:'material'},
+   {name:'Колена и выпуск водостока',qty:count('downpipe')*2,unit:'шт.',price:250,group:'material'},
+   {name:'Монтаж водосточных труб',qty:downpipeLength,unit:'пог. м',price:320,group:'work'}
+  );
+ }
+ if (count('snowGuard') > 0) {
+  const guardLength = eaveRun * (p.type === 'gable' ? 1 : 1);
+  extras.push(
+   {name:'Снегоуловитель',qty:guardLength,unit:'пог. м',price:900,group:'material'},
+   {name:'Крепёж снегоуловителя',qty:Math.ceil(guardLength/0.6),unit:'компл.',price:160,group:'material'},
+   {name:'Монтаж снегозадержателей',qty:guardLength,unit:'пог. м',price:350,group:'work'}
+  );
+ }
+ if (count('chimney') > 0) extras.push(
+  {name:'Комплект герметичного примыкания дымохода',qty:count('chimney'),unit:'компл.',price:4200,group:'material'},
+  {name:'Монтаж примыкания дымохода',qty:count('chimney'),unit:'шт.',price:2500,group:'work'}
+ );
+ if (count('shaft') + count('vent') > 0) extras.push(
+  {name:'Комплект проходки вентиляции',qty:count('shaft')+count('vent'),unit:'шт.',price:1800,group:'material'},
+  {name:'Монтаж кровельных проходок',qty:count('shaft')+count('vent'),unit:'шт.',price:1200,group:'work'}
+ );
+ if (count('skylight') > 0) extras.push(
+  {name:'Оклад мансардного окна',qty:count('skylight'),unit:'компл.',price:8500,group:'material'},
+  {name:'Монтаж мансардного окна',qty:count('skylight'),unit:'шт.',price:6500,group:'work'}
+ );
+ items.push(...extras);
  return {area:baseArea,orderArea,ridge,eaves,rakes,slopeLength,items,totalMaterials:items.filter(x=>x.group==='material').reduce((s,x)=>s+x.qty*x.price,0),totalWorks:items.filter(x=>x.group==='work').reduce((s,x)=>s+x.qty*x.price,0)};
 }
 function newProject():Project { return {id:crypto.randomUUID?.()||String(Date.now()),name:'Новая кровля',address:'',client:'',type:'gable',cover:'metal',length:10,width:8,pitch:30,overhang:0.5,waste:10,workPrice:850,materialPrice:0,created:new Date().toISOString(),accessories:[]}; }
