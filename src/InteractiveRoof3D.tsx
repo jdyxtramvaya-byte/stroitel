@@ -5,6 +5,21 @@ import { buildRoofGeometry, type RoofGeometryInput, type Point3 } from './roofGe
 
 type Props = { project: RoofGeometryInput; cover?: 'metal' | 'profile' | 'shingle' | 'membrane' };
 const clampCount = (n: number) => Math.max(2, Math.min(100, n));
+
+// Dispose generated geometry, materials, and per-mesh textures when rebuilding the
+// model. This prevents GPU memory from accumulating while users change roof options.
+function disposeThreeResources(root: THREE.Object3D) {
+  root.traverse(object => {
+    if (!(object instanceof THREE.Mesh || object instanceof THREE.LineSegments || object instanceof THREE.Line)) return;
+    object.geometry.dispose();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach(material => {
+      const textured = material as THREE.Material & { map?: THREE.Texture | null };
+      textured.map?.dispose();
+      material.dispose();
+    });
+  });
+}
 const defaultCoverColors: Record<NonNullable<Props['cover']>, string> = {
   metal: '#536f82', profile: '#416b80', shingle: '#514b45', membrane: '#9aa7a3',
 };
@@ -153,14 +168,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       cancelAnimationFrame(raf);
       observer.disconnect();
       controls.dispose();
-      scene.traverse(object => {
-        if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments || object instanceof THREE.Line) {
-          object.geometry.dispose();
-          const material = object.material;
-          if (Array.isArray(material)) material.forEach(item => item.dispose());
-          else material.dispose();
-        }
-      });
+      disposeThreeResources(scene);
       renderer.dispose();
       renderer.domElement.remove();
       sceneRef.current = null;
@@ -175,14 +183,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
     const old = scene.getObjectByName('roof-model');
     if (old) {
       scene.remove(old);
-      old.traverse(object => {
-        if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments || object instanceof THREE.Line) {
-          object.geometry.dispose();
-          const material = object.material;
-          if (Array.isArray(material)) material.forEach(item => item.dispose());
-          else material.dispose();
-        }
-      });
+      disposeThreeResources(old);
     }
     const group = new THREE.Group();
     group.name = 'roof-model';
@@ -313,8 +314,10 @@ export default function InteractiveRoof3D({ project, cover = 'metal' }: Props) {
       if (project.type === 'gable') z = Math.max(0, geometry.rise * (1 - Math.abs(yy - project.width / 2) / Math.max(project.width / 2, 0.001)));
       else if (project.type === 'shed') z = geometry.rise * yy / Math.max(project.width, 0.001);
       else if (project.type === 'hip') {
+        // Use the actual eave-edge coordinates here (including overhang); clamping
+        // y to the wall footprint makes the hip roof incorrectly rise at its edges.
         const dx = Math.min(x + project.overhang, project.length + project.overhang - x);
-        const dy = Math.min(yy + project.overhang, project.width + project.overhang - yy);
+        const dy = Math.min(y + project.overhang, project.width + project.overhang - y);
         z = Math.max(0, Math.min(dx, dy) * Math.tan(project.pitch * Math.PI / 180));
       }
       return { x, y, z: z + 0.03 };
