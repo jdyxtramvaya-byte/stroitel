@@ -237,7 +237,7 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
     membraneLayer.position.y = -0.005 + 3 * explodedOffset;
     counterBattenLayer.position.y = 4 * explodedOffset;
     battenLayer.position.y = 5 * explodedOffset;
-    surfaceLayer.position.y = 0.11 + 6 * explodedOffset;
+    surfaceLayer.position.y = 0.37 + 6 * explodedOffset;
     group.add(surfaceLayer, battenLayer, counterBattenLayer, membraneLayer, deckLayer, insulationLayer);
     const L = geometry.footprint.length;
     const W = geometry.footprint.width;
