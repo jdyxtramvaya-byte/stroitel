@@ -164,7 +164,7 @@ function TimberPanel({project,geometry}:{project:TimberProject;geometry:ReturnTy
   <div className="timber-section-control"><b>Контробрешётка</b><NumberField label="Толщина" value={counterA} unit="мм" min={10} max={100} step={5} onChange={setCounterA}/><NumberField label="Ширина" value={counterB} unit="мм" min={10} max={200} step={5} onChange={setCounterB}/></div>
  </div>
  <div className="timber-result-grid">
-  <div><small>Стропила, всего</small><b>{fmt(data.commonCount+(project.type==='hip'?4:0))} шт.</b><span>{fmt(data.rafterLm)} пог. м</span></div>
+  <div><small>Стропила, всего</small><b>{fmt(data.commonCount)} шт.</b><span>{fmt(data.rafterLm)} пог. м</span></div>
   <div><small>Обрешётка</small><b>{fmt(data.battensLm)} пог. м</b><span>Оценка по площади / шагу</span></div>
   <div><small>Контробрешётка</small><b>{fmt(data.counterLm)} пог. м</b><span>По линиям стропил</span></div>
   <div><small>Объём древесины</small><b>{fmt(data.totalVol)} м³</b><span>Сумма трёх заданных сечений</span></div>
