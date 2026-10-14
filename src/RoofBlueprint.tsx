@@ -110,39 +110,62 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
     <text x="380" y="395" textAnchor="middle" className="bp-note">ПЛАН СКАТОВ · КОНЁК / РЁБРА / СВЕСЫ</text>
   </g>;
 
-  const elevScale = Math.min(510 / Math.max(L, W, 1), 260 / Math.max(geometry.rise, 1));
-  const ex = (760 - Math.max(L, W) * elevScale) / 2;
-  const ground = 350;
-  const elevationPoints = roofType === 'shed'
-    ? [{x:ex,y:ground},{x:ex+W*elevScale,y:ground-geometry.rise*elevScale}]
-    : roofType === 'flat'
-      ? [{x:ex,y:ground},{x:ex+L*elevScale,y:ground}]
-      : [{x:ex,y:ground},{x:ex+W*elevScale/2,y:ground-geometry.rise*elevScale},{x:ex+W*elevScale,y:ground}];
+  const elevScale = Math.min(430 / Math.max(W, 1), 205 / Math.max(geometry.rise, 1), 1);
+  const ex = (760 - W * elevScale) / 2;
+  const ground = 345;
+  const eaveY = ground - Math.max(18, geometry.rise * elevScale * 0.16);
+  const ridgeY = ground - geometry.rise * elevScale;
+  const eaveLeft = { x: ex, y: eaveY };
+  const eaveRight = { x: ex + W * elevScale, y: eaveY };
+  const ridge = { x: ex + W * elevScale / 2, y: ridgeY };
   const elevation = <g>
-    <line x1={ex-24} y1={ground} x2={ex+Math.max(L,W)*elevScale+24} y2={ground} stroke="#536d7a" strokeWidth="1.5"/>
-    <path d={pathOf(elevationPoints)} fill="none" stroke="#294d60" strokeWidth="3" strokeLinejoin="round"/>
-    {roofType !== 'flat' && elevationPoints.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#294d60"/>)}
-    <Dimension x1={ex} y1={ground+24} x2={ex+Math.max(L,W)*elevScale} y2={ground+24} ext1={{x:ex,y:ground}} ext2={{x:ex+Math.max(L,W)*elevScale,y:ground}} label={fmt(Math.max(L,W))+' м'}/>
-    <Dimension x1={ex+Math.max(L,W)*elevScale+28} y1={ground} x2={ex+Math.max(L,W)*elevScale+28} y2={ground-geometry.rise*elevScale} ext1={{x:ex+Math.max(L,W)*elevScale,y:ground}} ext2={{x:ex+Math.max(L,W)*elevScale,y:ground-geometry.rise*elevScale}} label={fmt(geometry.rise)+' м'} vertical/>
-    <text x="380" y="405" textAnchor="middle" className="bp-note">ПРОФИЛЬ КРОВЛИ · УКЛОН {fmt(project.pitch)}°</text>
+    <line x1={ex-24} y1={ground} x2={ex+W*elevScale+24} y2={ground} stroke="#8a9aa3" strokeWidth=".8" strokeDasharray="4 3"/>
+    <path d={`M ${ex+8} ${ground} V ${eaveY} L ${ex+W*elevScale-8} ${eaveY} V ${ground}`} fill="#f1f4f5" stroke="#617985" strokeWidth="1.1"/>
+    {roofType === 'gable' || roofType === 'hip'
+      ? <path d={`M ${ex-10} ${eaveY} L ${ridge.x} ${ridgeY} L ${ex+W*elevScale+10} ${eaveY}`} fill="none" stroke="#203f4e" strokeWidth="2.8" strokeLinejoin="round"/>
+      : roofType === 'shed'
+        ? <path d={`M ${ex-10} ${eaveY-geometry.rise*elevScale*0.55} L ${ex+W*elevScale+10} ${eaveY}`} fill="none" stroke="#203f4e" strokeWidth="2.8"/>
+        : <line x1={ex-10} y1={eaveY} x2={ex+W*elevScale+10} y2={eaveY} stroke="#203f4e" strokeWidth="2.8"/>}
+    {roofType === 'gable' && <path d={`M ${ex+8} ${ground} L ${ridge.x} ${eaveY} L ${ex+W*elevScale-8} ${ground}`} fill="none" stroke="#91a4ad" strokeWidth=".8" strokeDasharray="4 3"/>}
+    <line x1={ex} y1={ground+25} x2={ex+W*elevScale} y2={ground+25} stroke="#344e5b" strokeWidth=".85" markerStart="url(#bpArrow)" markerEnd="url(#bpArrow)"/>
+    <line x1={ex} y1={ground} x2={ex} y2={ground+30} stroke="#71838d" strokeWidth=".65"/>
+    <line x1={ex+W*elevScale} y1={ground} x2={ex+W*elevScale} y2={ground+30} stroke="#71838d" strokeWidth=".65"/>
+    <text x={ex+W*elevScale/2} y={ground+19} textAnchor="middle" className="bp-dim-label">{fmt(W)} м</text>
+    {geometry.rise > 0.01 && <g>
+      <line x1={ex+W*elevScale+25} y1={ground} x2={ex+W*elevScale+25} y2={ridgeY} stroke="#344e5b" strokeWidth=".85" markerStart="url(#bpArrow)" markerEnd="url(#bpArrow)"/>
+      <line x1={ex+W*elevScale} y1={ground} x2={ex+W*elevScale+30} y2={ground} stroke="#71838d" strokeWidth=".65"/>
+      <line x1={ridge.x} y1={ridgeY} x2={ex+W*elevScale+30} y2={ridgeY} stroke="#71838d" strokeWidth=".65"/>
+      <text x={ex+W*elevScale+32} y={(ground+ridgeY)/2} textAnchor="middle" className="bp-dim-label" transform={`rotate(-90 ${ex+W*elevScale+32} ${(ground+ridgeY)/2})`}>{fmt(geometry.rise)} м</text>
+    </g>}
+    <text x="380" y="390" textAnchor="middle" className="bp-note">ФАСАДНЫЙ ПРОФИЛЬ · УКЛОН ${fmt(project.pitch)}°</text>
   </g>;
 
-  const sectionScale = Math.min(500 / Math.max(W, 1), 240 / Math.max(geometry.rise, 1));
+  const sectionScale = Math.min(430 / Math.max(W, 1), 205 / Math.max(geometry.rise, 1), 1);
   const sx = (760 - W * sectionScale) / 2;
-  const sy = 350;
+  const sy = 345;
+  const sectionPeak = sy - geometry.rise * sectionScale;
   const section = <g>
-    <path d={pathOf([{x:sx,y:sy},{x:sx+W*sectionScale,y:sy},{x:sx+W*sectionScale,y:sy+8},{x:sx,y:sy+8}])} fill="#dbe4e9" stroke="#627b88" strokeWidth="1.2"/>
+    <line x1={sx-24} y1={sy} x2={sx+W*sectionScale+24} y2={sy} stroke="#8a9aa3" strokeWidth=".8" strokeDasharray="4 3"/>
+    <rect x={sx+8} y={sy} width={Math.max(1,W*sectionScale-16)} height="10" fill="#dce4e8" stroke="#617985" strokeWidth="1"/>
     {roofType === 'gable' || roofType === 'hip' ? <>
-      <path d={`M ${sx} ${sy} L ${sx+W*sectionScale/2} ${sy-geometry.rise*sectionScale} L ${sx+W*sectionScale} ${sy}`} fill="none" stroke="#294d60" strokeWidth="3" strokeLinejoin="round"/>
-      {Array.from({length:Math.max(2,Math.floor(W/0.6))},(_,i)=>{
-        const x=sx+(i+1)*W*sectionScale/(Math.max(2,Math.floor(W/0.6))+1);
+      <path d={`M ${sx-8} ${sy} L ${sx+W*sectionScale/2} ${sectionPeak} L ${sx+W*sectionScale+8} ${sy}`} fill="none" stroke="#203f4e" strokeWidth="2.8" strokeLinejoin="round"/>
+      {Array.from({length:Math.min(18,Math.max(3,Math.floor(W/0.6)))},(_,i)=>{
+        const count=Math.min(18,Math.max(3,Math.floor(W/0.6)));
+        const x=sx+(i+1)*W*sectionScale/(count+1);
         const center=sx+W*sectionScale/2;
-        const y=sy-geometry.rise*sectionScale*Math.max(0,1-Math.abs(x-center)/(W*sectionScale/2));
-        return <line key={i} x1={x} y1={sy} x2={x} y2={y} stroke="#b07843" strokeWidth="2.4"/>;
+        const ratio=Math.max(0,1-Math.abs(x-center)/(W*sectionScale/2));
+        const y=sy-geometry.rise*sectionScale*ratio;
+        return <line key={i} x1={x} y1={sy} x2={x} y2={y} stroke="#a96f3f" strokeWidth="1.6"/>;
       })}
-    </> : roofType === 'shed' ? <path d={`M ${sx} ${sy} L ${sx+W*sectionScale} ${sy-geometry.rise*sectionScale}`} stroke="#294d60" strokeWidth="3"/> : <line x1={sx} y1={sy-2} x2={sx+W*sectionScale} y2={sy-2} stroke="#294d60" strokeWidth="3"/>}
-    <Dimension x1={sx} y1={sy+35} x2={sx+W*sectionScale} y2={sy+35} ext1={{x:sx,y:sy+8}} ext2={{x:sx+W*sectionScale,y:sy+8}} label={fmt(W)+' м'}/>
-    <text x="380" y="405" textAnchor="middle" className="bp-note">ПОПЕРЕЧНЫЙ РАЗРЕЗ · СХЕМА НЕСУЩИХ ЭЛЕМЕНТОВ</text>
+      <line x1={sx+W*sectionScale/2} y1={sectionPeak} x2={sx+W*sectionScale/2} y2={sy} stroke="#6f8996" strokeWidth="1" strokeDasharray="4 3"/>
+    </> : roofType === 'shed'
+      ? <path d={`M ${sx-8} ${sy} L ${sx+W*sectionScale+8} ${sy-geometry.rise*sectionScale}`} fill="none" stroke="#203f4e" strokeWidth="2.8"/>
+      : <line x1={sx-8} y1={sy-2} x2={sx+W*sectionScale+8} y2={sy-2} stroke="#203f4e" strokeWidth="2.8"/>}
+    <line x1={sx} y1={sy+27} x2={sx+W*sectionScale} y2={sy+27} stroke="#344e5b" strokeWidth=".85" markerStart="url(#bpArrow)" markerEnd="url(#bpArrow)"/>
+    <line x1={sx} y1={sy+5} x2={sx} y2={sy+32} stroke="#71838d" strokeWidth=".65"/>
+    <line x1={sx+W*sectionScale} y1={sy+5} x2={sx+W*sectionScale} y2={sy+32} stroke="#71838d" strokeWidth=".65"/>
+    <text x={sx+W*sectionScale/2} y={sy+21} textAnchor="middle" className="bp-dim-label">{fmt(W)} м</text>
+    <text x="380" y="390" textAnchor="middle" className="bp-note">ПОПЕРЕЧНЫЙ РАЗРЕЗ · СХЕМА СТРОПИЛЬНОЙ СИСТЕМЫ</text>
   </g>;
 
   const frameView = <g>
