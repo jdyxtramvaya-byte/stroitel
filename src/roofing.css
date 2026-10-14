@@ -119,3 +119,8 @@
 .timber-cut-list>div:not(:first-child)>b{font-size:13px}
 @media(max-width:900px){.timber-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.timber-cut-list{grid-template-columns:repeat(2,minmax(0,1fr))}.timber-cut-list>div:not(:first-child){padding-left:0;border-left:0}.timber-cut-list>div:first-child{grid-column:1/-1}}
 @media(max-width:600px){.timber-panel{padding:16px}.timber-input-grid,.timber-section-grid{grid-template-columns:1fr}.timber-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.timber-result-grid>div{padding:12px}.timber-result-grid b{font-size:17px}.timber-cut-list{grid-template-columns:1fr}}
+
+
+.roof-cover-color-control{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap}
+.roof-cover-color-control input[type="color"]{width:34px;height:30px;padding:2px;border:1px solid #b7c6bf;border-radius:8px;background:#fff;cursor:pointer}
+.roof-3d-toolbar .roof-cover-color-control{font-weight:600;color:#33483d}
