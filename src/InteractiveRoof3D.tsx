@@ -559,12 +559,14 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
       const railDark = new THREE.MeshStandardMaterial({ color: '#303d44', roughness: 0.4, metalness: 0.58 });
       if (accessory.type === 'gutter') {
         const x0 = -project.overhang, x1 = project.length + project.overhang;
-        addBeam({ x: x0, y: -project.overhang, z: 0.045 }, { x: x1, y: -project.overhang, z: 0.045 }, 0.12, railMetal);
-        addBeam({ x: x0, y: project.width + project.overhang, z: 0.045 }, { x: x1, y: project.width + project.overhang, z: 0.045 }, 0.12, railMetal);
+        // Keep the gutter at the eave edge of the raised roof skin, not beneath it.
+        const gutterCenterZ = surfaceLayer.position.y - 0.035;
+        addBeam({ x: x0, y: -project.overhang, z: gutterCenterZ }, { x: x1, y: -project.overhang, z: gutterCenterZ }, 0.12, railMetal);
+        addBeam({ x: x0, y: project.width + project.overhang, z: gutterCenterZ }, { x: x1, y: project.width + project.overhang, z: gutterCenterZ }, 0.12, railMetal);
         for (let i = 0; i < 4; i++) {
           const x = x0 + (x1 - x0) * i / 3;
-          addBeam({ x, y: -project.overhang, z: 0.02 }, { x, y: -project.overhang, z: 0.22 }, 0.045, railDark);
-          addBeam({ x, y: project.width + project.overhang, z: 0.02 }, { x, y: project.width + project.overhang, z: 0.22 }, 0.045, railDark);
+          addBeam({ x, y: -project.overhang, z: gutterCenterZ - 0.09 }, { x, y: -project.overhang, z: gutterCenterZ + 0.09 }, 0.045, railDark);
+          addBeam({ x, y: project.width + project.overhang, z: gutterCenterZ - 0.09 }, { x, y: project.width + project.overhang, z: gutterCenterZ + 0.09 }, 0.045, railDark);
         }
         return;
       }
@@ -574,7 +576,8 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
         const rightY = project.width - leftY;
         const railPoint = (x: number, y: number): Point3 => {
           const p = roofPoint(x, y);
-          return { x, y, z: p.z + 0.18 };
+          // Snow guards are fixed above the visible covering layer.
+          return { x, y, z: p.z + surfaceLayer.position.y + 0.13 };
         };
         addBeam(railPoint(x0, leftY), railPoint(x1, leftY), 0.075, railMetal);
         if (project.type !== 'shed') addBeam(railPoint(x0, rightY), railPoint(x1, rightY), 0.075, railMetal);
@@ -582,10 +585,10 @@ export default function InteractiveRoof3D({ project, cover = 'metal', accessorie
         for (let i = 0; i <= supportCount; i++) {
           const x = x0 + (x1 - x0) * i / supportCount;
           const p1 = railPoint(x, leftY);
-          addBeam({ x, y: leftY, z: p1.z - 0.18 }, p1, 0.045, railDark);
+          addBeam({ x, y: leftY, z: p1.z - 0.13 }, p1, 0.045, railDark);
           if (project.type !== 'shed') {
             const p2 = railPoint(x, rightY);
-            addBeam({ x, y: rightY, z: p2.z - 0.18 }, p2, 0.045, railDark);
+            addBeam({ x, y: rightY, z: p2.z - 0.13 }, p2, 0.045, railDark);
           }
         }
         return;
