@@ -11,7 +11,8 @@ const names: Record<RoofType, string> = {
   gable: 'Двускатная', hip: 'Вальмовая', shed: 'Односкатная', flat: 'Плоская',
 };
 const fmt = (n: number) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Number.isFinite(n) ? n : 0);
-const pathOf = (points: { x: number; y: number }[]) => points.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ' Z';
+const polylineOf = (points: { x: number; y: number }[]) => points.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
+const pathOf = (points: { x: number; y: number }[]) => polylineOf(points) + ' Z';
 
 function Dimension({ x1, y1, x2, y2, label, vertical = false, ext1, ext2 }: {
   x1: number; y1: number; x2: number; y2: number; label: string; vertical?: boolean;
@@ -169,19 +170,52 @@ export default function RoofBlueprint({ project, view, cover = 'metal', accessor
   </g>;
 
   const frameView = <g>
-    {geometry.faces.map(f => <path key={f.id} d={pathOf(f.points.map(project3D))} fill="none" stroke="#94a9b5" strokeWidth="1.1" strokeDasharray="5 4"/>)}
-    {Array.from({length:Math.max(3,Math.floor(project.length/0.6))},(_,i)=>{
-      const t=(i+1)/(Math.max(3,Math.floor(project.length/0.6))+1);
-      const x=-project.overhang+(project.length+2*project.overhang)*t;
-      const points: Point3[] = roofType === 'shed'
-        ? [{x,y:-project.overhang,z:0},{x,y:project.width+project.overhang,z:geometry.rise}]
-        : roofType === 'flat'
-          ? [{x,y:-project.overhang,z:0},{x,y:project.width+project.overhang,z:0}]
-          : [{x,y:-project.overhang,z:0},{x,y:(project.width)/2,z:geometry.rise},{x,y:project.width+project.overhang,z:0}];
-      return <path key={i} d={pathOf(points.map(project3D))} fill="none" stroke="#a96f3f" strokeWidth="2.2"/>;
-    })}
-    {geometry.faces.flatMap(f=>f.points).filter((p,i,a)=>a.findIndex(q=>q.x===p.x&&q.y===p.y&&q.z===p.z)===i).map((p,i)=><circle key={i} cx={project3D(p).x} cy={project3D(p).y} r="2.6" fill="#294d60"/>)}
-    <text x="380" y="400" textAnchor="middle" className="bp-note">СХЕМА КАРКАСА · ШАГ СТРОПИЛ УСЛОВНЫЙ</text>
+    {geometry.faces.map(f => <path key={'roof-outline-'+f.id} d={pathOf(f.points.map(project3D))} fill="none" stroke="#a8b7bf" strokeWidth="1" strokeDasharray="4 4"/>)}
+    {(() => {
+      const span = Math.max(0.1, project.width);
+      const run = Math.max(0.1, project.length);
+      const e = Math.max(0, project.overhang);
+      const count = Math.min(28, Math.max(3, Math.ceil(run / 0.6)));
+      const xs = Array.from({length: count}, (_, i) => -e + (run + 2 * e) * (i + 1) / (count + 1));
+      const ridgeStart = roofType === 'hip' ? span / 2 : 0;
+      const ridgeEnd = roofType === 'hip' ? run - span / 2 : run;
+      const members: {id:string; points:Point3[]; color:string; width:number}[] = [];
+      const add = (id:string, points:Point3[], color='#a96f3f', width=1.8) => members.push({id,points,color,width});
+      // Longitudinal eaves and the ridge/purlin line.
+      add('eave-near', [{x:-e,y:-e,z:0},{x:run+e,y:-e,z:0}], '#294d60', 2.6);
+      add('eave-far', [{x:-e,y:span+e,z:0},{x:run+e,y:span+e,z:0}], '#294d60', 2.6);
+      if (roofType === 'gable' || roofType === 'hip') {
+        add('ridge', [{x:ridgeStart,y:span/2,z:geometry.rise},{x:ridgeEnd,y:span/2,z:geometry.rise}], '#294d60', 2.8);
+        if (roofType === 'hip') {
+          add('hip-front-near', [{x:0,y:-e,z:0},{x:ridgeStart,y:span/2,z:geometry.rise}], '#294d60', 2.2);
+          add('hip-front-far', [{x:0,y:span+e,z:0},{x:ridgeStart,y:span/2,z:geometry.rise}], '#294d60', 2.2);
+          add('hip-back-near', [{x:run,y:-e,z:0},{x:ridgeEnd,y:span/2,z:geometry.rise}], '#294d60', 2.2);
+          add('hip-back-far', [{x:run,y:span+e,z:0},{x:ridgeEnd,y:span/2,z:geometry.rise}], '#294d60', 2.2);
+        }
+      }
+      xs.forEach((x, i) => {
+        let zNear = 0, zFar = 0;
+        if (roofType === 'gable') { zNear = 0; zFar = 0; }
+        if (roofType === 'hip') {
+          const endFactor = Math.max(0, Math.min(1, Math.min(x, run - x) / Math.max(span / 2, 0.1)));
+          zNear = 0; zFar = 0;
+          const peak = geometry.rise * endFactor;
+          add('rafter-left-'+i, [{x,y:-e,z:0},{x,y:span/2,z:peak}], '#b07847', 1.7);
+          add('rafter-right-'+i, [{x,y:span/2,z:peak},{x,y:span+e,z:0}], '#b07847', 1.7);
+          return;
+        }
+        if (roofType === 'gable') {
+          add('rafter-'+i, [{x,y:-e,z:0},{x,y:span/2,z:geometry.rise},{x,y:span+e,z:0}], '#b07847', 1.7);
+        } else if (roofType === 'shed') {
+          add('rafter-'+i, [{x,y:-e,z:0},{x,y:span+e,z:geometry.rise}], '#b07847', 1.7);
+        } else {
+          add('rafter-'+i, [{x,y:-e,z:0},{x,y:span+e,z:0}], '#b07847', 1.7);
+        }
+      });
+      return <g>{members.map(m => <path key={m.id} d={polylineOf(m.points.map(project3D))} fill="none" stroke={m.color} strokeWidth={m.width} strokeLinejoin="round" strokeLinecap="round"/>)}</g>;
+    })()}
+    <text x="380" y="377" textAnchor="middle" className="bp-note">КАРКАС · ДЛИНА {fmt(project.length)} м · ШИРИНА {fmt(project.width)} м · ШАГ СТРОПИЛ УСЛОВНЫЙ</text>
+    <text x="380" y="394" textAnchor="middle" className="bp-note">СХЕМА НЕ ЗАДАЁТ СЕЧЕНИЯ БРУСА И УЗЛЫ КРЕПЛЕНИЯ</text>
   </g>;
 
   const title = view === '3d' ? 'ОБЪЁМНАЯ МОДЕЛЬ' : view === 'plan' ? 'ПЛАН КРОВЛИ' : view === 'elevation' ? 'ФАСАД / ПРОФИЛЬ' : view === 'section' ? 'ПОПЕРЕЧНЫЙ РАЗРЕЗ' : 'СТРОПИЛЬНЫЙ КАРКАС';
